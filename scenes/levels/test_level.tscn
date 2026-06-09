@@ -40,7 +40,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1941252158 node_paths=PackedStringArray("target")]
 transform = Transform3D(0.92454606, 0.09862827, -0.3680857, 0, 0.9659258, 0.25881904, 0.38107038, -0.23929013, 0.8930429, 0, 3, 8)
 script = ExtResource("3_fr1um")
-target = NodePath("../Player")
 follow_speed = 2.0
 framing_offset_x = null
 height_offset = null
+target = NodePath("../Player")
