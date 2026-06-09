@@ -5,7 +5,7 @@ extends CharacterBody3D
 
 # Usamos export para ajustar valores desde el editor sin tocar el código
 @export_group("Horizontal Movement")
-@export var speed: float = 14.0
+@export var speed: float = 12.0
 @export var acceleration: float = 100.0
 @export var friction: float = 80.0
 
