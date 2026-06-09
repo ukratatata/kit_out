@@ -22,6 +22,8 @@ albedo_texture = ExtResource("1_yautc")
 uv1_triplanar = true
 uv1_world_triplanar = true
 
+[sub_resource type="BoxMesh" id="BoxMesh_fr1um"]
+
 [node name="TestLevel" type="Node3D" unique_id=1679223160]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=581594941]
@@ -34,13 +36,52 @@ collision_mask = 2
 size = Vector3(100, 1, 4)
 material = SubResource("StandardMaterial3D_fr1um")
 
+[node name="Floor" type="CSGBox3D" parent="Floor" unique_id=900263680]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.61777, -18.027573, 0)
+use_collision = true
+collision_mask = 2
+size = Vector3(100, 1, 4)
+material = SubResource("StandardMaterial3D_fr1um")
+
 [node name="Player" parent="." unique_id=1912640473 instance=ExtResource("1_jbqir")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1941252158 node_paths=PackedStringArray("target")]
 transform = Transform3D(0.92454606, 0.09862827, -0.3680857, 0, 0.9659258, 0.25881904, 0.38107038, -0.23929013, 0.8930429, 0, 3, 8)
 script = ExtResource("3_fr1um")
-follow_speed = 2.0
-framing_offset_x = null
-height_offset = null
 target = NodePath("../Player")
+follow_speed = 2.0
+
+[node name="Node" type="Node" parent="." unique_id=1388205950]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Node" unique_id=1887403205]
+transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 4.591651, 1.4215462, -2.6223412)
+mesh = SubResource("BoxMesh_fr1um")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Node" unique_id=1392372535]
+transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 15.78262, 1.4215462, -2.6223412)
+mesh = SubResource("BoxMesh_fr1um")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="Node" unique_id=1603182971]
+transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 25.092712, 1.4215462, -2.6223412)
+mesh = SubResource("BoxMesh_fr1um")
+
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="Node" unique_id=1685704384]
+transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 35.114292, 1.4215462, -2.6223412)
+mesh = SubResource("BoxMesh_fr1um")
+
+[node name="MeshInstance3D5" type="MeshInstance3D" parent="Node" unique_id=1850102309]
+transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -10.831734, 1.4215462, -2.6223412)
+mesh = SubResource("BoxMesh_fr1um")
+
+[node name="MeshInstance3D6" type="MeshInstance3D" parent="Node" unique_id=481302315]
+transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -24.458437, 1.4215462, -2.6223412)
+mesh = SubResource("BoxMesh_fr1um")
+
+[node name="MeshInstance3D7" type="MeshInstance3D" parent="Node" unique_id=1046389805]
+transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -34.896248, 1.4215462, -2.6223412)
+mesh = SubResource("BoxMesh_fr1um")
+
+[node name="MeshInstance3D8" type="MeshInstance3D" parent="Node" unique_id=188493746]
+transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -43.624588, 1.4215462, -2.6223412)
+mesh = SubResource("BoxMesh_fr1um")
