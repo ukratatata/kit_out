@@ -52,8 +52,15 @@ collision_mask = 2
 size = Vector3(100, 1, 4)
 material = SubResource("StandardMaterial3D_fr1um")
 
+[node name="Floor4" type="CSGBox3D" parent="floor" unique_id=2014691654]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 214.66309, -28.030647, 0)
+use_collision = true
+collision_mask = 2
+size = Vector3(100, 1, 4)
+material = SubResource("StandardMaterial3D_fr1um")
+
 [node name="Player" parent="." unique_id=1912640473 instance=ExtResource("1_jbqir")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+slide_friction = 10.0
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1941252158 node_paths=PackedStringArray("target")]
 transform = Transform3D(0.92454606, 0.09862827, -0.3680857, 0, 0.9659258, 0.25881904, 0.38107038, -0.23929013, 0.8930429, 0, 3, 8)
@@ -113,4 +120,8 @@ mesh = SubResource("BoxMesh_fr1um")
 
 [node name="MeshInstance3D13" type="MeshInstance3D" parent="Node" unique_id=1209063248]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -8, 1.422, -2.622)
+mesh = SubResource("BoxMesh_fr1um")
+
+[node name="MeshInstance3D14" type="MeshInstance3D" parent="Node/MeshInstance3D13" unique_id=776928126]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60.675743, -10.213747, -3.8146973e-06)
 mesh = SubResource("BoxMesh_fr1um")

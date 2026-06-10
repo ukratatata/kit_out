@@ -95,8 +95,10 @@ enum PlayerState {
 @export var slide_end_speed: float     = 3.0
 ## Hard cap on how long a single slide can last.
 @export var slide_max_duration: float  = 1.5
-## Extra acceleration added when sliding downhill on a slope.
-@export var downhill_force: float      = 15.0
+## Multiplier on the physics-based slope gravity during a slide.
+## 1.0 = realistic. 1.5 = arcade-boosted (default). Reset this in the Inspector
+## after updating — the old value (15.0) was a raw force and no longer applies.
+@export var downhill_force: float      = 1.5
 
 @export_group("Physics Tuning")
 ## Snaps the character to slopes — eliminates the stepping/bouncing feeling on ramps.
@@ -344,17 +346,44 @@ func _state_crouch(delta: float, input_dir: float) -> void:
 
 
 func _state_slide(delta: float, input_dir: float) -> void:
-	velocity.x = move_toward(velocity.x, 0.0, slide_friction * delta)
+	var floor_n  := get_floor_normal()
+	var on_slope := is_on_floor() and absf(floor_n.x) > 0.05
 
-	# Extra push on downhill slopes
-	var floor_n := get_floor_normal()
-	if is_on_floor() and absf(floor_n.x) > 0.05:
-		velocity.x -= floor_n.x * downhill_force * delta
+	# ── Slope gravity ─────────────────────────────────────────────────────────
+	# Project gravity onto the floor surface to get the physics-correct
+	# acceleration along the slope.  Sign is automatic:
+	#   floor_n.x > 0  →  slope drops to the right  →  pushes player rightward
+	#   floor_n.x < 0  →  slope drops to the left   →  pushes player leftward
+	var slope_accel := _gravity * gravity_multiplier * downhill_force \
+		* floor_n.x * floor_n.y if on_slope else 0.0
 
-	if not is_on_floor():      _to(PlayerState.FALL);  return
-	if _jump_pressed():        _to(PlayerState.JUMP);  return
+	# ── Adaptive friction ─────────────────────────────────────────────────────
+	# Going downhill (velocity and slope force share sign): gravity does the work,
+	# so friction is nearly zero — the slide accelerates freely.
+	# Going uphill (opposing signs): heavy braking on top of the gravity fighting you.
+	# Flat ground: standard slide deceleration.
+	var going_downhill := on_slope and velocity.x * slope_accel > 0.0
+	var effective_friction: float
+	if going_downhill:
+		effective_friction = slide_friction * 0.15
+	elif on_slope:
+		effective_friction = slide_friction * 2.0
+	else:
+		effective_friction = slide_friction
 
-	if _slide_timer <= 0.0 or absf(velocity.x) < slide_end_speed:
+	velocity.x  = move_toward(velocity.x, 0.0, effective_friction * delta)
+	velocity.x += slope_accel * delta
+
+	# Hard cap — prevents runaway speed on steep slopes
+	var max_slide_speed := speed * sprint_multiplier * 1.3
+	velocity.x = clampf(velocity.x, -max_slide_speed, max_slide_speed)
+
+	if not is_on_floor():   _to(PlayerState.FALL);  return
+	if _jump_pressed():     _to(PlayerState.JUMP);  return
+
+	# Timer ends flat/uphill slides; active downhill gravity keeps the slide alive naturally
+	var timed_out := not going_downhill and _slide_timer <= 0.0
+	if timed_out or absf(velocity.x) < slide_end_speed:
 		if Input.is_action_pressed("crouch"): _to(PlayerState.CROUCH)
 		else: _to(PlayerState.IDLE if absf(velocity.x) < 0.5 else PlayerState.RUN)
 
