@@ -7,6 +7,9 @@
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_sh265"]
 
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lvxji"]
+height = 1.0
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gmlin"]
 albedo_texture = ExtResource("2_dovo2")
 uv1_triplanar = true
@@ -35,7 +38,8 @@ uv1_triplanar = true
 [sub_resource type="PrismMesh" id="PrismMesh_0owmy"]
 material = SubResource("StandardMaterial3D_75vfm")
 
-[node name="Player" type="CharacterBody3D" unique_id=1912640473]
+[node name="Player" type="CharacterBody3D" unique_id=1912640473 node_paths=PackedStringArray("crouch_collision")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 collision_layer = 2
 collision_mask = 13
 axis_lock_linear_z = true
@@ -43,9 +47,15 @@ axis_lock_angular_x = true
 axis_lock_angular_y = true
 axis_lock_angular_z = true
 script = ExtResource("1_8afob")
+crouch_collision = NodePath("CrouchCollision")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=233985205]
 shape = SubResource("CapsuleShape3D_sh265")
+
+[node name="CrouchCollision" type="CollisionShape3D" parent="." unique_id=617778070]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("CapsuleShape3D_lvxji")
+disabled = true
 
 [node name="VisualContainer" type="Node3D" parent="." unique_id=1482133662]
 

@@ -1,0 +1,53 @@
+All movement and interaction code must use Input.is_action_pressed("action_name") or Input.is_action_just_pressed("action_name") based EXCLUSIVELY on the action names defined below. For mobile controls, we will use TouchScreenButton nodes that emit these exact same string actions.
+
+Action Mapping (Action Names):
+
+> Action: move_left
+
+Keyboard: A key, Left Arrow
+
+Gamepad: D-pad Left, Left Stick X-Axis (Negative)
+
+Touchscreen: Left UI Button
+
+> Action: move_right
+
+Keyboard: D key, Right Arrow
+
+Gamepad: D-pad Right, Left Stick X-Axis (Positive)
+
+Touchscreen: Right UI Button
+
+> Action: jump
+
+Keyboard: Spacebar, Up Arrow, W
+
+Gamepad: South Button (A on Xbox / Cross on PlayStation) or Left stick Y Axis (Negative)
+
+Touchscreen: Jump UI Button
+
+> Action: crouch
+
+Keyboard: S key, Down Arrow, Left Control (Ctrl) or C key
+
+Gamepad: D-pad Down, Left Stick Y-Axis (Positive) or East Button (B on Xbox, Circle on PlayStation)
+
+Touchscreen: Crouch UI Button
+
+> Action: sprint
+
+Keyboard: Left Shift
+
+Gamepad: West Button (X on Xbox / Square on PlayStation) or Right Trigger (RT/R2)
+
+Touchscreen: Sprint UI Button
+
+
+UI Actions:
+The Gem should use these default Godot actions for menu navigation.
+
+ui_accept (Enter / Space / Gamepad South)
+
+ui_cancel (Escape / Gamepad East)
+
+ui_pause (Escape / P / Gamepad Start)

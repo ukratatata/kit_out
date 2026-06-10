@@ -29,15 +29,24 @@ uv1_world_triplanar = true
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=581594941]
 environment = SubResource("Environment_v45ci")
 
-[node name="Floor" type="CSGBox3D" parent="." unique_id=20548410]
+[node name="floor" type="Node" parent="." unique_id=74344196]
+
+[node name="Floor" type="CSGBox3D" parent="floor" unique_id=20548410]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 use_collision = true
 collision_mask = 2
 size = Vector3(100, 1, 4)
 material = SubResource("StandardMaterial3D_fr1um")
 
-[node name="Floor" type="CSGBox3D" parent="Floor" unique_id=900263680]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.61777, -18.027573, 0)
+[node name="Floor2" type="CSGBox3D" parent="floor" unique_id=900263680]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.61777, -18.527573, 0)
+use_collision = true
+collision_mask = 2
+size = Vector3(100, 1, 4)
+material = SubResource("StandardMaterial3D_fr1um")
+
+[node name="Floor3" type="CSGBox3D" parent="floor" unique_id=192598118]
+transform = Transform3D(0.9704812, 0.2411767, 0, -0.2411767, 0.9704812, 0, 0, 0, 1, 153.02061, -30.580246, 1.9073486e-06)
 use_collision = true
 collision_mask = 2
 size = Vector3(100, 1, 4)

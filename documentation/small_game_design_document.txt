@@ -1,0 +1,40 @@
+> Setting & Visuals: > - Theme: Cat-themed cartoony aesthetic.
+
+- Perspective: 2.5D. Graphics are 3D, but player movement is strictly locked to the 2D plane (X and Y axes).
+
+- Scenario: TBD (Deciding between a game-show environment or urban rooftop parkour).
+
+> Mechanics & Physics: 
+
+- Movement: Standard speed with a Sprint option. Sprinting accelerates the player, but sprinting for too long triggers a "lose balance" state (like in Doritos Crash Course).
+
+- Friction: Special ice-type surfaces cause sliding. [AI Note: Help me test and tweak normal ground friction to decide between an immediate stop or slight inertia].
+
+- Sliding: A slide action that allows accelerating downhill and passing under low obstacles. Should include a subtle, immediate speed boost.
+
+- Game Feel: [AI Note: Provide standard starting values for Coyote Time and Jump Buffering so I can test what feels best].
+
+> Obstacles & Interactions: 
+
+- Swinging hammers
+
+- Collapsing platforms
+
+- Trampolines
+
+- Slippery ice sections
+
+- Ropes (swinging/climbing)
+
+- Skipping Rope-style hammers
+
+- Projectiles/Shooting obstacles to dodge
+
+- Wall jumping (only on specific tagged wall types)
+
+- Crouching through low gaps (must work mid-jump)
+
+- Bubble-style jumping pads (disappear after one use for a couple of seconds)
+
+> Camera: > Follows the player on the X and Y axes (fixed Z-axis), positioned slightly ahead of the player's movement direction to show upcoming obstacles.
+
