@@ -122,6 +122,12 @@ enum PlayerState {
 @export var squash_on_jump: Vector3       = Vector3(0.75, 1.30, 0.75)
 @export var squash_on_land: Vector3       = Vector3(1.35, 0.70, 1.35)
 @export var squash_recovery_speed: float  = 12.0
+## Lean angle (radians) at the start of a sprint when stamina is full — subtle but present.
+@export var sprint_lean_base: float   = 0.05
+## Extra lean added as stamina drains. At 0 stamina: total lean = base + max ≈ 14°.
+@export var sprint_lean_max: float    = 0.20
+## How quickly the lean settles to its target angle.
+@export var sprint_lean_speed: float  = 6.0
 
 
 # ── Runtime Variables ─────────────────────────────────────────────────────────
@@ -564,6 +570,16 @@ func _update_visuals(delta: float, input_dir: float) -> void:
 	# ── Off-balance wobble ────────────────────────────────────────────────────
 	if current_state == PlayerState.OFF_BALANCE:
 		visual_container.rotation.z = sin(Time.get_ticks_msec() * 0.012) * 0.18
+	elif current_state == PlayerState.SPRINT:
+		# Lean forward in the direction of travel.
+		# At full stamina: subtle base lean only. As stamina drains the lean grows,
+		# giving an increasingly desperate look just before the stumble hits.
+		var stamina_t := sprint_stamina / maxf(sprint_stamina_max, 0.001)
+		var lean_amt  := sprint_lean_base + sprint_lean_max * (1.0 - stamina_t)
+		var lean_dir: float = -sign(velocity.x) if absf(velocity.x) > 0.1 else -_last_input_dir
+		visual_container.rotation.z = lerp_angle(
+			visual_container.rotation.z, lean_amt * lean_dir, sprint_lean_speed * delta
+		)
 	else:
 		visual_container.rotation.z = lerp_angle(
 			visual_container.rotation.z, 0.0, 8.0 * delta
