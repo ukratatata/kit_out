@@ -4,6 +4,8 @@
 [ext_resource type="Texture2D" uid="uid://dwcpmj1jjgxcg" path="res://addons/kenney_prototype_textures/orange/texture_08.png" id="2_dovo2"]
 [ext_resource type="Texture2D" uid="uid://4nyvfi0gf4i7" path="res://addons/kenney_prototype_textures/light/texture_06.png" id="3_gmlin"]
 [ext_resource type="Texture2D" uid="uid://u1qlhfmcrfu" path="res://addons/kenney_prototype_textures/dark/texture_05.png" id="4_lvxji"]
+[ext_resource type="PackedScene" uid="uid://blq5c51wptdis" path="res://assets/Egyptian_Cat.fbx" id="5_p47bc"]
+[ext_resource type="PackedScene" uid="uid://d3orkhmvd6rxi" path="res://assets/cartoon_cat.glb" id="6_75vfm"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_sh265"]
 
@@ -60,16 +62,27 @@ disabled = true
 [node name="VisualContainer" type="Node3D" parent="." unique_id=1482133662]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="VisualContainer" unique_id=1365560709]
+visible = false
 mesh = SubResource("CapsuleMesh_dovo2")
 
 [node name="Tail" type="MeshInstance3D" parent="VisualContainer" unique_id=1403010897]
 transform = Transform3D(3.9300057e-09, -1.0386061e-08, -0.105000004, -0.05423601, -0.39388287, 0, -0.08990805, 0.23760538, -4.5896957e-09, 0, 0, -0.6081003)
+visible = false
 mesh = SubResource("CapsuleMesh_8afob")
 
 [node name="LeftEar" type="MeshInstance3D" parent="VisualContainer" unique_id=1777212158]
 transform = Transform3D(6.327531e-05, 0.06334691, -0.15626754, 0, 0.2881183, 0.034357652, 0.14499998, -2.7643424e-05, 6.8192276e-05, 0.17999999, 1.1, -7.854867e-05)
+visible = false
 mesh = SubResource("PrismMesh_dovo2")
 
 [node name="RightEar" type="MeshInstance3D" parent="VisualContainer" unique_id=386484]
 transform = Transform3D(6.327531e-05, -0.06334691, -0.15626754, 0, 0.2881183, -0.034357652, 0.14499998, 2.7643424e-05, 6.8192276e-05, -0.17999999, 1.1, 7.854867e-05)
+visible = false
 mesh = SubResource("PrismMesh_0owmy")
+
+[node name="Egyptian_Cat" parent="VisualContainer" unique_id=277626200 instance=ExtResource("5_p47bc")]
+transform = Transform3D(0.395, 0, 0, 0, 0.395, 0, 0, 0, 0.395, 0, -1, 0)
+visible = false
+
+[node name="Sketchfab_Scene" parent="VisualContainer" unique_id=817555035 instance=ExtResource("6_75vfm")]
+transform = Transform3D(-0.75, 0, -6.556708e-08, 0, 0.75, 0, 6.556708e-08, 0, -0.75, 0, -1, 0)

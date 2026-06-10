@@ -562,27 +562,28 @@ func _update_visuals(delta: float, input_dir: float) -> void:
 
 	# ── Facing rotation (was hardcoded 0.2 weight — now delta-correct) ────────
 	if current_state != PlayerState.OFF_BALANCE:
-		var target_rot := PI / 2.0 if _last_input_dir > 0.0 else -PI / 2.0
+		var target_rot := -PI / 2.0 if _last_input_dir > 0.0 else PI / 2.0  # −Z forward convention
 		visual_container.rotation.y = lerp_angle(
 			visual_container.rotation.y, target_rot, visual_rotation_speed * delta
 		)
 
 	# ── Off-balance wobble ────────────────────────────────────────────────────
 	if current_state == PlayerState.OFF_BALANCE:
-		visual_container.rotation.z = sin(Time.get_ticks_msec() * 0.012) * 0.18
+		# rotation.x tilts in the screen XY plane (world Z-axis) — visible side sway.
+		visual_container.rotation.x = sin(Time.get_ticks_msec() * 0.012) * 0.18
 	elif current_state == PlayerState.SPRINT:
-		# Lean forward in the direction of travel.
-		# At full stamina: subtle base lean only. As stamina drains the lean grows,
-		# giving an increasingly desperate look just before the stumble hits.
+		# Lean forward in the direction of travel using rotation.x.
+		# For a −Z-facing model after Ry(−PI/2), local X = world +Z, so rotation.x
+		# tilts in the screen XY plane. Negative lean_amt = forward lean for both
+		# facing directions automatically.
 		var stamina_t := sprint_stamina / maxf(sprint_stamina_max, 0.001)
 		var lean_amt  := sprint_lean_base + sprint_lean_max * (1.0 - stamina_t)
-		var lean_dir: float = -sign(velocity.x) if absf(velocity.x) > 0.1 else -_last_input_dir
-		visual_container.rotation.z = lerp_angle(
-			visual_container.rotation.z, lean_amt * lean_dir, sprint_lean_speed * delta
+		visual_container.rotation.x = lerp_angle(
+			visual_container.rotation.x, -lean_amt, sprint_lean_speed * delta
 		)
 	else:
-		visual_container.rotation.z = lerp_angle(
-			visual_container.rotation.z, 0.0, 8.0 * delta
+		visual_container.rotation.x = lerp_angle(
+			visual_container.rotation.x, 0.0, 8.0 * delta
 		)
 
 	# ── Squash & stretch ──────────────────────────────────────────────────────

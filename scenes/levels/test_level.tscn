@@ -18,47 +18,17 @@ sky = SubResource("Sky_fr1um")
 tonemap_mode = 2
 glow_enabled = true
 
+[sub_resource type="BoxMesh" id="BoxMesh_fr1um"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fr1um"]
 albedo_texture = ExtResource("1_yautc")
 uv1_triplanar = true
 uv1_world_triplanar = true
 
-[sub_resource type="BoxMesh" id="BoxMesh_fr1um"]
-
 [node name="TestLevel" type="Node3D" unique_id=1679223160]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=581594941]
 environment = SubResource("Environment_v45ci")
-
-[node name="floor" type="Node" parent="." unique_id=74344196]
-
-[node name="Floor" type="CSGBox3D" parent="floor" unique_id=20548410]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
-use_collision = true
-collision_mask = 2
-size = Vector3(100, 1, 4)
-material = SubResource("StandardMaterial3D_fr1um")
-
-[node name="Floor2" type="CSGBox3D" parent="floor" unique_id=900263680]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.61777, -18.527573, 0)
-use_collision = true
-collision_mask = 2
-size = Vector3(100, 1, 4)
-material = SubResource("StandardMaterial3D_fr1um")
-
-[node name="Floor3" type="CSGBox3D" parent="floor" unique_id=192598118]
-transform = Transform3D(0.9704812, 0.2411767, 0, -0.2411767, 0.9704812, 0, 0, 0, 1, 153.02061, -30.580246, 1.9073486e-06)
-use_collision = true
-collision_mask = 2
-size = Vector3(100, 1, 4)
-material = SubResource("StandardMaterial3D_fr1um")
-
-[node name="Floor4" type="CSGBox3D" parent="floor" unique_id=2014691654]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 214.66309, -28.030647, 0)
-use_collision = true
-collision_mask = 2
-size = Vector3(100, 1, 4)
-material = SubResource("StandardMaterial3D_fr1um")
 
 [node name="Player" parent="." unique_id=1912640473 instance=ExtResource("1_jbqir")]
 slide_friction = 10.0
@@ -69,65 +39,103 @@ sprint_lean_max = 0.5
 transform = Transform3D(0.92454606, 0.09862827, -0.3680857, 0, 0.9659258, 0.25881904, 0.38107038, -0.23929013, 0.8930429, 0, 3, 8)
 script = ExtResource("3_fr1um")
 target = NodePath("../Player")
-follow_speed = 2.0
 
-[node name="Node" type="Node" parent="." unique_id=1388205950]
+[node name="World" type="Node" parent="." unique_id=1542676140]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Node" unique_id=1887403205]
+[node name="Background cubes" type="Node" parent="World" unique_id=1388205950]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="World/Background cubes" unique_id=1887403205]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 0, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="Node" unique_id=497098316]
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="World/Background cubes" unique_id=497098316]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 8, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D3" type="MeshInstance3D" parent="Node" unique_id=286415168]
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="World/Background cubes" unique_id=286415168]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 16, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D4" type="MeshInstance3D" parent="Node" unique_id=843078998]
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="World/Background cubes" unique_id=843078998]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 24, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D5" type="MeshInstance3D" parent="Node" unique_id=6093288]
+[node name="MeshInstance3D5" type="MeshInstance3D" parent="World/Background cubes" unique_id=6093288]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 32, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D6" type="MeshInstance3D" parent="Node" unique_id=126648837]
+[node name="MeshInstance3D6" type="MeshInstance3D" parent="World/Background cubes" unique_id=126648837]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 40, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D7" type="MeshInstance3D" parent="Node" unique_id=1568853217]
+[node name="MeshInstance3D7" type="MeshInstance3D" parent="World/Background cubes" unique_id=1568853217]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, 48, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D8" type="MeshInstance3D" parent="Node" unique_id=1060854781]
+[node name="MeshInstance3D8" type="MeshInstance3D" parent="World/Background cubes" unique_id=1060854781]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -48, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D9" type="MeshInstance3D" parent="Node" unique_id=2132107110]
+[node name="MeshInstance3D9" type="MeshInstance3D" parent="World/Background cubes" unique_id=2132107110]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -40, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D10" type="MeshInstance3D" parent="Node" unique_id=1299991941]
+[node name="MeshInstance3D10" type="MeshInstance3D" parent="World/Background cubes" unique_id=1299991941]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -32, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D11" type="MeshInstance3D" parent="Node" unique_id=2010745790]
+[node name="MeshInstance3D11" type="MeshInstance3D" parent="World/Background cubes" unique_id=2010745790]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -24, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D12" type="MeshInstance3D" parent="Node" unique_id=967362078]
+[node name="MeshInstance3D12" type="MeshInstance3D" parent="World/Background cubes" unique_id=967362078]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -16, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D13" type="MeshInstance3D" parent="Node" unique_id=1209063248]
+[node name="MeshInstance3D13" type="MeshInstance3D" parent="World/Background cubes" unique_id=1209063248]
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -8, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="MeshInstance3D14" type="MeshInstance3D" parent="Node/MeshInstance3D13" unique_id=776928126]
+[node name="MeshInstance3D14" type="MeshInstance3D" parent="World/Background cubes/MeshInstance3D13" unique_id=776928126]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60.675743, -10.213747, -3.8146973e-06)
 mesh = SubResource("BoxMesh_fr1um")
+
+[node name="floor" type="Node" parent="World" unique_id=74344196]
+
+[node name="Floor" type="CSGBox3D" parent="World/floor" unique_id=20548410]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+collision_mask = 2
+size = Vector3(100, 1, 4)
+material = SubResource("StandardMaterial3D_fr1um")
+
+[node name="Floor2" type="CSGBox3D" parent="World/floor" unique_id=900263680]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.61777, -18.527573, 0)
+use_collision = true
+collision_mask = 2
+size = Vector3(100, 1, 4)
+material = SubResource("StandardMaterial3D_fr1um")
+
+[node name="Floor3" type="CSGBox3D" parent="World/floor" unique_id=192598118]
+transform = Transform3D(0.9704812, 0.2411767, 0, -0.2411767, 0.9704812, 0, 0, 0, 1, 153.02061, -30.580246, 1.9073486e-06)
+use_collision = true
+collision_mask = 2
+size = Vector3(100, 1, 4)
+material = SubResource("StandardMaterial3D_fr1um")
+
+[node name="Floor5" type="CSGBox3D" parent="World/floor" unique_id=1865580540]
+transform = Transform3D(0.9702957, -0.2419219, 0, 0.2419219, 0.9702957, 0, 0, 0, 1, -43.773537, -30.611132, 1.9073486e-06)
+use_collision = true
+collision_mask = 2
+size = Vector3(100, 1, 4)
+material = SubResource("StandardMaterial3D_fr1um")
+
+[node name="Floor4" type="CSGBox3D" parent="World/floor" unique_id=2014691654]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 214.66309, -28.030647, 0)
+use_collision = true
+collision_mask = 2
+size = Vector3(100, 1, 4)
+material = SubResource("StandardMaterial3D_fr1um")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1908956664 node_paths=PackedStringArray("player")]
 script = ExtResource("4_v45ci")

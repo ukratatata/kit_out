@@ -27,7 +27,7 @@ extends Camera3D
 ## Width of the invisible box where the player moves freely without moving the camera.
 @export var deadzone_width: float     = 2.0
 ## Hard clamp — the camera will never let the player get further than this off-center.
-@export var max_screen_distance: float = 4.0
+@export var max_screen_distance: Vector2 = Vector2(4.0, 3.0)
 ## Shifts the camera center ahead of the player to show upcoming obstacles.
 @export var screen_offset_x: float   = 4.0
 ## Camera height above the player.
@@ -101,20 +101,31 @@ func _physics_process(delta: float) -> void:
 		target_cam_pos.x += (dist_x + half_dz)
 
 	# ── 2. Height (Y axis) ────────────────────────────────────────────────────
-	target_cam_pos.y = target.global_position.y + height_offset
+	var ideal_center_y := target.global_position.y + height_offset
+	target_cam_pos.y = ideal_center_y
 
 	# ── 3. Smooth Follow ──────────────────────────────────────────────────────
 	global_position.x = lerp(global_position.x, target_cam_pos.x, follow_speed * delta)
 	global_position.y = lerp(global_position.y, target_cam_pos.y, follow_speed * delta)
 
 	# ── 4. Hard Clamp ─────────────────────────────────────────────────────────
+	# Horizontal limit
 	var actual_dist_x := ideal_center_x - global_position.x
-	if actual_dist_x > max_screen_distance:
-		global_position.x = ideal_center_x - max_screen_distance
+	if actual_dist_x > max_screen_distance.x:
+		global_position.x = ideal_center_x - max_screen_distance.x
 		target_cam_pos.x  = global_position.x
-	elif actual_dist_x < -max_screen_distance:
-		global_position.x = ideal_center_x + max_screen_distance
+	elif actual_dist_x < (-max_screen_distance.x / 2.0):	# CHANGE TO POSIBLY ADJUSTING LEFT AND RIGHT DISTANCE INSTEAD OF MAGIC NUMER
+		global_position.x = ideal_center_x + (max_screen_distance.x / 2.0)
 		target_cam_pos.x  = global_position.x
+
+	# Vertical limit
+	var actual_dist_y := ideal_center_y - global_position.y
+	if actual_dist_y > max_screen_distance.y:
+		global_position.y = ideal_center_y - max_screen_distance.y
+		target_cam_pos.y  = global_position.y
+	elif actual_dist_y < -max_screen_distance.y:
+		global_position.y = ideal_center_y + max_screen_distance.y
+		target_cam_pos.y  = global_position.y
 
 	# ── 5. Dynamic Tilt (reads camera_velocity, not raw physics) ─────────────
 	var target_rot_x := base_rotation_x
