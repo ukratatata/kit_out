@@ -96,6 +96,9 @@ enum PlayerState {
 ## Hard cap on how long a slide can last on flat/uphill ground.
 ## On active downhill slopes this timer is ignored — gravity drives the slide.
 @export var slide_max_duration: float  = 1.5
+## Minimum time the player is locked into a slide after initiating it.
+## Prevents accidental cancels when tapping crouch quickly.
+@export var slide_lock_duration: float = 0.5
 ## Absolute speed limit during a slide. Raise to allow faster downhill runs.
 ## At the default of 60 you'll rarely hit it — gravity is the real limiter.
 @export var slide_max_speed: float     = 60.0
@@ -128,11 +131,13 @@ var _coyote_timer: float      = 0.0
 var _jump_buffer_timer: float = 0.0
 var _off_balance_timer: float = 0.0
 var _slide_timer: float       = 0.0
+var _slide_lock_timer: float  = 0.0  # Crouch-release locked for this long after slide entry
 
 var sprint_stamina: float     = 0.0
 
 var _was_on_floor: bool       = false
 var _last_input_dir: float    = 1.0  # Last non-zero input — used for idle facing
+var _air_crouch: bool         = false  # True while crouching mid-air (tight-space pass)
 var _visual_scale_target: Vector3 = Vector3.ONE
 ## The resting scale for the current state. ONE when upright, shorter when crouching/sliding.
 ## Squash events set _visual_scale_target temporarily; it lerps back to this.
@@ -182,7 +187,8 @@ func _tick_timers(delta: float) -> void:
 	_off_balance_timer = maxf(_off_balance_timer  - delta, 0.0)
 
 	if current_state == PlayerState.SLIDE:
-		_slide_timer = maxf(_slide_timer - delta, 0.0)
+		_slide_timer      = maxf(_slide_timer      - delta, 0.0)
+		_slide_lock_timer = maxf(_slide_lock_timer - delta, 0.0)
 
 	if current_state != PlayerState.SPRINT:
 		sprint_stamina = minf(sprint_stamina + stamina_regen_rate * delta, sprint_stamina_max)
@@ -223,6 +229,12 @@ func _to(new_state: PlayerState) -> void:
 			_set_crouch(false)
 			_visual_base_scale   = Vector3.ONE
 			_visual_scale_target = Vector3.ONE
+		PlayerState.JUMP, PlayerState.FALL:
+			if _air_crouch:
+				_air_crouch          = false
+				_set_crouch(false)
+				_visual_base_scale   = Vector3.ONE
+				_visual_scale_target = Vector3.ONE
 
 	# ── Entry setup ──
 	match new_state:
@@ -238,7 +250,8 @@ func _to(new_state: PlayerState) -> void:
 
 		PlayerState.SLIDE:
 			_set_crouch(true)
-			_slide_timer = slide_max_duration
+			_slide_timer      = slide_max_duration
+			_slide_lock_timer = slide_lock_duration
 			# Only boost when starting a slide from the ground.
 			# Landing into a slide from a jump already has momentum — don't add more.
 			if current_state not in [PlayerState.JUMP, PlayerState.FALL]:
@@ -323,6 +336,7 @@ func _state_off_balance(delta: float, input_dir: float) -> void:
 
 func _state_jump(delta: float, input_dir: float) -> void:
 	_air_move(delta, input_dir)
+	_handle_air_crouch()
 
 	if is_on_floor(): _land(); return
 	if velocity.y <= 0.0: _to(PlayerState.FALL); return
@@ -333,6 +347,8 @@ func _state_jump(delta: float, input_dir: float) -> void:
 
 
 func _state_fall(delta: float, input_dir: float) -> void:
+	_handle_air_crouch()
+
 	if Input.is_action_just_pressed("jump"):
 		if _coyote_timer > 0.0:
 			_to(PlayerState.JUMP)  # Coyote time — feel like you're still on the ledge
@@ -359,6 +375,12 @@ func _state_crouch(delta: float, input_dir: float) -> void:
 
 
 func _state_slide(delta: float, input_dir: float) -> void:
+	# Releasing crouch exits the slide — but only after the lock window expires.
+	# The lock stops accidental slides from cancelling on the same frame they start.
+	if not Input.is_action_pressed("crouch") and _slide_lock_timer <= 0.0:
+		_to(PlayerState.RUN if absf(velocity.x) > 0.5 else PlayerState.IDLE)
+		return
+
 	var floor_n  := get_floor_normal()
 	var on_slope := is_on_floor() and absf(floor_n.x) > 0.05
 
@@ -445,6 +467,23 @@ func _land() -> void:
 ## Unified jump check: floor, coyote, OR (for grounded states) just pressed.
 func _jump_pressed() -> bool:
 	return Input.is_action_just_pressed("jump")
+
+
+## Reads crouch input while airborne and toggles the crouched collision shape.
+## Lets the player duck through tight overhead gaps mid-jump or mid-fall.
+## JUMP and FALL states call this every frame.
+func _handle_air_crouch() -> void:
+	if Input.is_action_pressed("crouch"):
+		if not _air_crouch:
+			_air_crouch          = true
+			_set_crouch(true)
+			_visual_base_scale   = Vector3(1.0, 0.55, 1.0)
+			_visual_scale_target = Vector3(1.0, 0.55, 1.0)
+	elif _air_crouch:
+		_air_crouch          = false
+		_set_crouch(false)
+		_visual_base_scale   = Vector3.ONE
+		_visual_scale_target = Vector3.ONE
 
 
 func _try_wall_jump() -> void:
