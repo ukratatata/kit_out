@@ -93,8 +93,12 @@ enum PlayerState {
 @export var slide_friction: float      = 18.0
 ## Slide ends (or becomes a crouch) when horizontal speed drops below this.
 @export var slide_end_speed: float     = 3.0
-## Hard cap on how long a single slide can last.
+## Hard cap on how long a slide can last on flat/uphill ground.
+## On active downhill slopes this timer is ignored — gravity drives the slide.
 @export var slide_max_duration: float  = 1.5
+## Absolute speed limit during a slide. Raise to allow faster downhill runs.
+## At the default of 60 you'll rarely hit it — gravity is the real limiter.
+@export var slide_max_speed: float     = 60.0
 ## Multiplier on the physics-based slope gravity during a slide.
 ## 1.0 = realistic. 1.5 = arcade-boosted (default). Reset this in the Inspector
 ## after updating — the old value (15.0) was a raw force and no longer applies.
@@ -235,9 +239,11 @@ func _to(new_state: PlayerState) -> void:
 		PlayerState.SLIDE:
 			_set_crouch(true)
 			_slide_timer = slide_max_duration
-			# Boost in the direction of travel (or last input if nearly stopped)
-			var dir: float = sign(velocity.x) if absf(velocity.x) > 0.1 else _last_input_dir
-			velocity.x += dir * slide_boost
+			# Only boost when starting a slide from the ground.
+			# Landing into a slide from a jump already has momentum — don't add more.
+			if current_state not in [PlayerState.JUMP, PlayerState.FALL]:
+				var dir: float = sign(velocity.x) if absf(velocity.x) > 0.1 else _last_input_dir
+				velocity.x += dir * slide_boost
 			_visual_base_scale   = Vector3(1.15, 0.45, 1.15)  # Low and wide
 			_visual_scale_target = Vector3(1.15, 0.45, 1.15)
 
@@ -266,7 +272,14 @@ func _state_idle(_delta: float, input_dir: float) -> void:
 func _state_run(delta: float, input_dir: float) -> void:
 	var cur_fric := _get_friction()
 	if absf(input_dir) > 0.1:
-		velocity.x = move_toward(velocity.x, input_dir * speed, acceleration * delta)
+		var target      := input_dir * speed
+		var same_dir    = sign(velocity.x) == sign(input_dir)
+		var above_speed = same_dir and absf(velocity.x) > speed
+		if above_speed:
+			# Carrying slide momentum — bleed gently with friction, don't snap to run speed
+			velocity.x = move_toward(velocity.x, target, cur_fric * 0.35 * delta)
+		else:
+			velocity.x = move_toward(velocity.x, target, acceleration * delta)
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, cur_fric * delta)
 
@@ -374,9 +387,8 @@ func _state_slide(delta: float, input_dir: float) -> void:
 	velocity.x  = move_toward(velocity.x, 0.0, effective_friction * delta)
 	velocity.x += slope_accel * delta
 
-	# Hard cap — prevents runaway speed on steep slopes
-	var max_slide_speed := speed * sprint_multiplier * 1.3
-	velocity.x = clampf(velocity.x, -max_slide_speed, max_slide_speed)
+	# Safety cap — slide_max_speed is intentionally high so downhill runs feel free
+	velocity.x = clampf(velocity.x, -slide_max_speed, slide_max_speed)
 
 	if not is_on_floor():   _to(PlayerState.FALL);  return
 	if _jump_pressed():     _to(PlayerState.JUMP);  return
@@ -393,10 +405,25 @@ func _state_slide(delta: float, input_dir: float) -> void:
 # ─────────────────────────────────────────────────────────────────────────────
 
 func _air_move(delta: float, input_dir: float) -> void:
-	if absf(input_dir) > 0.1:
-		velocity.x = move_toward(velocity.x, input_dir * speed, acceleration * 0.5 * delta)
+	# Passive drag is very light so slide momentum carries through the arc.
+	# friction * 0.04 = ~3 units/s² — a 30-unit/s slide jump loses ~2.5 units/s over a
+	# typical arc, landing at ~27.5. That momentum is the whole point.
+	velocity.x = move_toward(velocity.x, 0.0, friction * 0.04 * delta)
+
+	if absf(input_dir) < 0.1:
+		return  # No input: passive drag only, full momentum preserved
+
+	var target        := input_dir * speed
+	var same_dir      = sign(velocity.x) == sign(input_dir)
+	var above_speed   = same_dir and absf(velocity.x) > speed
+
+	if above_speed:
+		# Pressing with the momentum — don't fight the built-up speed.
+		# Passive drag above handles the natural bleed.
+		return
 	else:
-		velocity.x = move_toward(velocity.x, 0.0, friction * 0.25 * delta)
+		# Normal air control or air braking against momentum
+		velocity.x = move_toward(velocity.x, target, acceleration * 0.45 * delta)
 
 
 func _land() -> void:
@@ -405,6 +432,8 @@ func _land() -> void:
 	# Buffered jump fires immediately on touch-down
 	if _jump_buffer_timer > 0.0:
 		_to(PlayerState.JUMP)
+	elif Input.is_action_pressed("crouch") and absf(velocity.x) > slide_end_speed:
+		_to(PlayerState.SLIDE)  # Land-slide: convert air momentum into a ground slide
 	elif Input.is_action_pressed("crouch"):
 		_to(PlayerState.CROUCH)
 	elif absf(velocity.x) > 0.5:
