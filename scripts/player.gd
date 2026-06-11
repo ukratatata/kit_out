@@ -87,6 +87,8 @@ enum PlayerState {
 
 # ── Crouch & Slide ────────────────────────────────────────────────────────────
 @export_group("Crouch & Slide")
+## Fraction of normal walk speed while crouched and moving (not sliding).
+@export_range(0.1, 1.0, 0.05) var crouch_speed_mult: float = 0.4
 ## Speed burst added to velocity.x at the start of a slide.
 @export var slide_boost: float         = 4.0
 ## Friction applied while sliding (lower = longer slide).
@@ -113,6 +115,16 @@ enum PlayerState {
 ## Half the standing capsule height (default 2.0 capsule → 1.0 here).
 ## Used to anchor the visual to the feet during squash. Update if you resize the capsule.
 @export var stand_half_height: float  = 1.0
+
+@export_group("Air Control")
+## Passive horizontal drag while airborne, as a fraction of ground friction.
+## Low values let slide-jump momentum survive the full arc.
+@export_range(0.0, 0.5, 0.01) var air_drag: float       = 0.04
+## Fraction of ground acceleration available for steering mid-air.
+@export_range(0.0, 1.0, 0.05) var air_control: float    = 0.45
+## Friction multiplier when running while above normal run speed (post-slide bleed).
+## Lower = momentum fades more slowly back to run speed.
+@export_range(0.0, 1.0, 0.05) var momentum_bleed: float = 0.35
 
 
 # ── Visual Feel ───────────────────────────────────────────────────────────────
@@ -296,7 +308,7 @@ func _state_run(delta: float, input_dir: float) -> void:
 		var above_speed = same_dir and absf(velocity.x) > speed
 		if above_speed:
 			# Carrying slide momentum — bleed gently with friction, don't snap to run speed
-			velocity.x = move_toward(velocity.x, target, cur_fric * 0.35 * delta)
+			velocity.x = move_toward(velocity.x, target, cur_fric * momentum_bleed * delta)
 		else:
 			velocity.x = move_toward(velocity.x, target, acceleration * delta)
 	else:
@@ -331,7 +343,7 @@ func _state_sprint(delta: float, input_dir: float) -> void:
 
 
 func _state_off_balance(delta: float, input_dir: float) -> void:
-	# Stumbling — heavily reduced control, slight Z-wobble handled in _update_visuals
+	# Stumbling — heavily reduced control, rotation.x wobble handled in _update_visuals
 	velocity.x = move_toward(velocity.x, input_dir * speed * off_balance_control, friction * 0.4 * delta)
 
 	if not is_on_floor(): _to(PlayerState.FALL);        return
@@ -367,16 +379,20 @@ func _state_fall(delta: float, input_dir: float) -> void:
 
 
 func _state_crouch(delta: float, input_dir: float) -> void:
-	# Slow movement while crouching
-	velocity.x = move_toward(velocity.x, input_dir * speed * 0.5, friction * delta)
+	# Slow crouch-walk — tunable via crouch_speed_mult in the Inspector
+	velocity.x = move_toward(velocity.x, input_dir * speed * crouch_speed_mult, friction * delta)
 
 	if not is_on_floor():                    _to(PlayerState.FALL);   return
 	if _jump_pressed():                      _to(PlayerState.JUMP);   return
 	if not Input.is_action_pressed("crouch"):
 		_to(PlayerState.RUN if absf(input_dir) > 0.1 else PlayerState.IDLE)
 		return
-	# Build speed while crouched → transition to slide
-	if absf(velocity.x) > slide_end_speed:
+	# Only auto-slide on a downhill slope while moving with gravity.
+	# On flat ground, crouch-walking never triggers a slide — the player just
+	# walks slowly regardless of speed. Slides from flat ground come from
+	# pressing crouch while already running fast (handled in _state_run).
+	var floor_n := get_floor_normal()
+	if absf(floor_n.x) > 0.1 and velocity.x * floor_n.x > 0.0 and absf(velocity.x) > 1.0:
 		_to(PlayerState.SLIDE)
 
 
@@ -395,8 +411,8 @@ func _state_slide(delta: float, input_dir: float) -> void:
 	# acceleration along the slope.  Sign is automatic:
 	#   floor_n.x > 0  →  slope drops to the right  →  pushes player rightward
 	#   floor_n.x < 0  →  slope drops to the left   →  pushes player leftward
-	var slope_accel := _gravity * gravity_multiplier * downhill_force \
-		* floor_n.x * floor_n.y if on_slope else 0.0
+	var slope_accel := (_gravity * gravity_multiplier * downhill_force \
+		* floor_n.x * floor_n.y) if on_slope else 0.0
 
 	# ── Adaptive friction ─────────────────────────────────────────────────────
 	# Going downhill (velocity and slope force share sign): gravity does the work,
@@ -433,10 +449,9 @@ func _state_slide(delta: float, input_dir: float) -> void:
 # ─────────────────────────────────────────────────────────────────────────────
 
 func _air_move(delta: float, input_dir: float) -> void:
-	# Passive drag is very light so slide momentum carries through the arc.
-	# friction * 0.04 = ~3 units/s² — a 30-unit/s slide jump loses ~2.5 units/s over a
-	# typical arc, landing at ~27.5. That momentum is the whole point.
-	velocity.x = move_toward(velocity.x, 0.0, friction * 0.04 * delta)
+	# Passive drag keeps slide-jump momentum alive through the arc.
+	# Tune air_drag in the Inspector (default 0.04 = very light bleed).
+	velocity.x = move_toward(velocity.x, 0.0, friction * air_drag * delta)
 
 	if absf(input_dir) < 0.1:
 		return  # No input: passive drag only, full momentum preserved
@@ -446,12 +461,11 @@ func _air_move(delta: float, input_dir: float) -> void:
 	var above_speed   = same_dir and absf(velocity.x) > speed
 
 	if above_speed:
-		# Pressing with the momentum — don't fight the built-up speed.
-		# Passive drag above handles the natural bleed.
+		# Pressing with momentum — don't fight built-up speed, let drag bleed it.
 		return
 	else:
-		# Normal air control or air braking against momentum
-		velocity.x = move_toward(velocity.x, target, acceleration * 0.45 * delta)
+		# Normal air steering or braking against momentum
+		velocity.x = move_toward(velocity.x, target, acceleration * air_control * delta)
 
 
 func _land() -> void:
@@ -559,13 +573,25 @@ func _update_camera_velocity() -> void:
 func _update_visuals(delta: float, input_dir: float) -> void:
 	if absf(input_dir) > 0.1:
 		_last_input_dir = input_dir
+			
+		# ── Facing rotation (was hardcoded 0.2 weight — now delta-correct) ────────
+		if current_state != PlayerState.OFF_BALANCE:
+			var current_yaw := visual_container.rotation.y
+			# El motor de físicas a veces lee la rotación 270º como -90º. 
+			# Lo convertimos a estrictamente positivo sumándole TAU (2 * PI) 
+			# para que nuestro lerp() matemático no se rompa.
+			if current_yaw < 0.0:
+				current_yaw += TAU
+			# Derecha = 270º (3*PI/2) | Izquierda = 90º (PI/2)
+			var target_rot := 3.0 * PI / 2.0 if _last_input_dir > 0.0 else PI / 2.0 
+			
+			# Al usar un lerp() normal entre 90 y 270, forzamos a que la rotación 
+			# pase obligatoriamente por la mitad (180º o PI), mirando hacia la pantalla.
+			visual_container.rotation.y = lerp(
+				current_yaw, target_rot, visual_rotation_speed * delta
+			)
 
-	# ── Facing rotation (was hardcoded 0.2 weight — now delta-correct) ────────
-	if current_state != PlayerState.OFF_BALANCE:
-		var target_rot := -PI / 2.0 if _last_input_dir > 0.0 else PI / 2.0  # −Z forward convention
-		visual_container.rotation.y = lerp_angle(
-			visual_container.rotation.y, target_rot, visual_rotation_speed * delta
-		)
+
 
 	# ── Off-balance wobble ────────────────────────────────────────────────────
 	if current_state == PlayerState.OFF_BALANCE:
