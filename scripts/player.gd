@@ -48,10 +48,6 @@ enum PlayerState {
 @export_group("Surface Interactions")
 ## Friction on plain ground that belongs to no special surface group.
 @export var default_friction: float = 80.0
-## Designer-defined surfaces (ice, mud, sand…). Each entry matches a node
-## group and overrides friction/acceleration/max speed while standing on it.
-## Add elements and assign .tres files created from surface_data.gd.
-@export var custom_surfaces: Array[SurfaceData] = []
 
 
 # ── Vertical Movement ─────────────────────────────────────────────────────────
@@ -116,8 +112,6 @@ enum PlayerState {
 @export var downhill_force: float      = 1.5
 
 @export_group("Physics Tuning")
-## Snaps the character to slopes — eliminates the stepping/bouncing feeling on ramps.
-@export var slope_snap_length: float = 0.35
 ## Half the standing capsule height (default 2.0 capsule → 1.0 here).
 ## Used to anchor the visual to the feet during squash. Update if you resize the capsule.
 @export var stand_half_height: float  = 1.0
@@ -173,7 +167,7 @@ var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 func _ready() -> void:
 	sprint_stamina = sprint_stamina_max
-	floor_snap_length = slope_snap_length  # Prevents stepping/bouncing on ramps
+	floor_snap_length = surface.slope_snap_length  # Prevents stepping/bouncing on ramps
 	# Velocity travels ALONG the slope surface instead of horizontally + snap.
 	# Without this, fast movement on steep ramps separates the body from the
 	# floor faster than the snap can reattach it — periodic contact-loss lurches.
@@ -198,10 +192,10 @@ func _physics_process(delta: float) -> void:
 	# movement doesn't outrun the floor detection on steep drops.
 	if is_on_floor():
 		# Base snap + the exact horizontal distance traveled this frame
-		floor_snap_length = slope_snap_length + (absf(velocity.x) * delta)
+		floor_snap_length = surface.slope_snap_length + (absf(velocity.x) * delta)
 	else:
 		# Reset to base so we don't accidentally snap to ceilings/high walls while falling
-		floor_snap_length = slope_snap_length 
+		floor_snap_length = surface.slope_snap_length 
 	# ─────────────────────────────
 
 	# Belt-and-suspenders 2.5D lock (axis_lock_linear_z is also set in the scene)
@@ -331,10 +325,10 @@ func _to(new_state: PlayerState) -> void:
 # ─────────────────────────────────────────────────────────────────────────────
 
 func _state_idle(delta: float, input_dir: float) -> void:
-	var surface := _get_surface()
-	var cur_fric := surface.friction if surface else default_friction
+	var current_surface: SurfaceData = surface.get_surface()
+	var cur_fric := current_surface.friction if current_surface else default_friction
 	velocity.x = move_toward(velocity.x, 0.0, cur_fric * delta)
-	_apply_surface_slip(delta, surface)
+	surface.apply_surface_slip(delta, current_surface)
 
 	if not is_on_floor():        _to(PlayerState.FALL);   return
 	if _jump_pressed():          _to(PlayerState.JUMP);   return
@@ -345,10 +339,10 @@ func _state_idle(delta: float, input_dir: float) -> void:
 func _state_run(delta: float, input_dir: float) -> void:
 	# Read the surface underfoot once, derive everything from its data packet.
 	# null = plain ground → default values. Adding new surfaces needs no code.
-	var surface := _get_surface()
-	var cur_fric  := surface.friction if surface else default_friction
-	var cur_accel := acceleration * (surface.acceleration_mult if surface else 1.0)
-	var cur_speed := speed * (surface.max_speed_mult if surface else 1.0)
+	var current_surface: SurfaceData = surface.get_surface()
+	var cur_fric  := current_surface.friction if current_surface else default_friction
+	var cur_accel := acceleration * (current_surface.acceleration_mult if current_surface else 1.0)
+	var cur_speed := speed * (current_surface.max_speed_mult if current_surface else 1.0)
 
 	if absf(input_dir) > 0.1:
 		var target      := input_dir * cur_speed
@@ -361,7 +355,7 @@ func _state_run(delta: float, input_dir: float) -> void:
 			velocity.x = move_toward(velocity.x, target, cur_accel * delta)
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, cur_fric * delta)
-	_apply_surface_slip(delta, surface)
+	surface.apply_surface_slip(delta, current_surface)
 
 	if not is_on_floor():               _to(PlayerState.FALL);   return
 	if _jump_pressed():                 _to(PlayerState.JUMP);   return
@@ -383,10 +377,10 @@ func _state_sprint(delta: float, input_dir: float) -> void:
 		return
 	# Above-speed check confirmed correct (your BUG CHECK comment): entering
 	# sprint with slide/trampoline momentum bleeds gently instead of snapping.
-	var surface := _get_surface()
-	var cur_fric     := surface.friction if surface else default_friction
-	var cur_accel    := acceleration * (surface.acceleration_mult if surface else 1.0)
-	var sprint_speed := speed * sprint_multiplier * (surface.max_speed_mult if surface else 1.0)
+	var current_surface: SurfaceData = surface.get_surface()
+	var cur_fric     := current_surface.friction if current_surface else default_friction
+	var cur_accel    := acceleration * (current_surface.acceleration_mult if current_surface else 1.0)
+	var sprint_speed := speed * sprint_multiplier * (current_surface.max_speed_mult if current_surface else 1.0)
 	var target_speed := input_dir * sprint_speed
 	var same_dir       = sign(velocity.x) == sign(input_dir)
 	var is_above_speed = same_dir and absf(velocity.x) > sprint_speed
@@ -396,7 +390,7 @@ func _state_sprint(delta: float, input_dir: float) -> void:
 	else:
 		# Normal sprint acceleration (with the surface penalty if any)
 		velocity.x = move_toward(velocity.x, target_speed, cur_accel * delta)
-	_apply_surface_slip(delta, surface)
+	surface.apply_surface_slip(delta, current_surface)
 
 	if not is_on_floor():                                          _to(PlayerState.FALL);   return
 	if _jump_pressed():                                            _to(PlayerState.JUMP);   return
@@ -407,10 +401,10 @@ func _state_sprint(delta: float, input_dir: float) -> void:
 
 func _state_off_balance(delta: float, input_dir: float) -> void:
 	# Stumbling — heavily reduced control, rotation.x wobble handled in _update_visuals
-	var surface := _get_surface()
-	var cur_fric := surface.friction if surface else default_friction
+	var current_surface: SurfaceData = surface.get_surface()
+	var cur_fric := current_surface.friction if current_surface else default_friction
 	velocity.x = move_toward(velocity.x, input_dir * speed * off_balance_control, cur_fric * 0.4 * delta)
-	_apply_surface_slip(delta, surface)
+	surface.apply_surface_slip(delta, current_surface)
 
 	if not is_on_floor(): _to(PlayerState.FALL);        return
 	if _jump_pressed():   _to(PlayerState.JUMP);        return  # You can still jump!
@@ -448,8 +442,8 @@ func _state_fall(delta: float, input_dir: float) -> void:
 
 func _state_crouch(delta: float, input_dir: float) -> void:
 	# Slow crouch-walk — tunable via crouch_speed_mult in the Inspector
-	var surface := _get_surface()
-	var cur_fric := surface.friction if surface else default_friction
+	var current_surface: SurfaceData = surface.get_surface()
+	var cur_fric := current_surface.friction if current_surface else default_friction
 	velocity.x = move_toward(velocity.x, input_dir * speed * crouch_speed_mult, cur_fric * delta)
 
 	if not is_on_floor():                    _to(PlayerState.FALL);   return
@@ -521,10 +515,10 @@ func _state_slide(delta: float, input_dir: float) -> void:
 ## timer, so consecutive hits keep the player locked.
 func _state_stunned(delta: float, _input_dir: float) -> void:
 	if is_on_floor():
-		var surface := _get_surface()
-		var cur_fric := surface.friction if surface else default_friction
+		var current_surface: SurfaceData = surface.get_surface()
+		var cur_fric := current_surface.friction if current_surface else default_friction
 		velocity.x = move_toward(velocity.x, 0.0, cur_fric * 0.5 * delta)
-		_apply_surface_slip(delta, surface)
+		surface.apply_surface_slip(delta, current_surface)
 
 	if _stun_timer > 0.0:
 		return
@@ -677,49 +671,6 @@ func _try_wall_jump() -> void:
 	if current_state != PlayerState.JUMP:
 		current_state = PlayerState.JUMP
 		state_changed.emit(current_state)
-
-
-## Returns the SurfaceData of the special surface underfoot, or null when on
-## plain ground or airborne. Uses a short downward raycast instead of slide
-## collisions: with gravity disabled on the floor, move_and_slide often records
-## ZERO collisions even though is_on_floor() is true — a raycast always sees
-## the floor regardless of physical contact pressure.
-func _get_surface() -> SurfaceData:
-	if not is_on_floor() or custom_surfaces.is_empty():
-		return null
-
-	var space := get_world_3d().direct_space_state
-	var ray := PhysicsRayQueryParameters3D.create(
-		global_position,
-		global_position + Vector3.DOWN * (stand_half_height + slope_snap_length + 0.9),
-		collision_mask,
-		[get_rid()]  # Never hit our own capsule
-	)
-	var hit := space.intersect_ray(ray)
-	if hit.is_empty():
-		return null
-
-	var body: Object = hit["collider"]
-	for surf in custom_surfaces:
-		# "surf and" guards against empty (null) Inspector array slots
-		if surf and body.is_in_group(surf.group_name):
-			return surf
-	return null
-
-
-## Downhill pull from slippery surfaces (SurfaceData.slope_slip). Lets icy
-## ramps drag the player downhill even while standing still. Called by the
-## grounded states right after their friction step, so surface friction is
-## what resists the pull — ice (friction 8) barely resists, while a designer
-## could give a high-friction surface some slip and still hold the player.
-func _apply_surface_slip(delta: float, surface: SurfaceData) -> void:
-	if not surface or surface.slope_slip <= 0.0 or not is_on_floor():
-		return
-	var n := get_floor_normal()
-	if absf(n.x) < 0.05:
-		return  # Flat ground — nothing to slip down
-	# Same slope projection the SLIDE state uses: gravity along the surface
-	velocity.x += _gravity * gravity_multiplier * surface.slope_slip * n.x * n.y * delta
 
 
 func _set_crouch(crouching: bool) -> void:

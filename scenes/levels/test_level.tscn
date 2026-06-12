@@ -2,9 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://3q52hmccaj2x" path="res://scenes/player/player.tscn" id="1_jbqir"]
 [ext_resource type="Texture2D" uid="uid://dxgxamr1rrrqf" path="res://addons/kenney_prototype_textures/dark/texture_09.png" id="1_yautc"]
-[ext_resource type="Script" uid="uid://p3hucwb431be" path="res://scripts/surface_data.gd" id="2_7x1jh"]
 [ext_resource type="Script" uid="uid://csmm35e3mm1xp" path="res://scripts/camera_follow.gd" id="3_fr1um"]
-[ext_resource type="Resource" path="res://resources/ice_surface.tres" id="3_hfwtw"]
 [ext_resource type="Texture2D" uid="uid://qgk1pgd74ju7" path="res://addons/kenney_prototype_textures/orange/texture_13.png" id="4_48ne7"]
 [ext_resource type="Script" uid="uid://dc6x5bd1ttk1i" path="res://scripts/debug_hud.gd" id="4_v45ci"]
 [ext_resource type="Texture2D" uid="uid://cq6ir48vkrjb0" path="res://addons/kenney_prototype_textures/light/texture_08.png" id="5_6xh4u"]
@@ -51,10 +49,7 @@ uv1_world_triplanar = true
 environment = SubResource("Environment_v45ci")
 
 [node name="Player" parent="." unique_id=1912640473 instance=ExtResource("1_jbqir")]
-custom_surfaces = Array[ExtResource("2_7x1jh")]([ExtResource("3_hfwtw")])
 slide_friction = 10.0
-sprint_lean_base = 0.1
-sprint_lean_max = 0.5
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1941252158 node_paths=PackedStringArray("target")]
 transform = Transform3D(0.92454606, 0.09862827, -0.3680857, 0, 0.9659258, 0.25881904, 0.38107038, -0.23929013, 0.8930429, 0, 3, 8)
