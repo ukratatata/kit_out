@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://3q52hmccaj2x"]
 
 [ext_resource type="Script" uid="uid://bcd08tmuuty0h" path="res://scripts/player.gd" id="1_8afob"]
+[ext_resource type="Script" uid="uid://dwmdgqdn14tta" path="res://scenes/player/visual_controller.gd" id="3_gmlin"]
+[ext_resource type="Script" uid="uid://c2f570cw4u26c" path="res://scenes/player/surface_detector.gd" id="4_lvxji"]
 [ext_resource type="PackedScene" uid="uid://d3orkhmvd6rxi" path="res://assets/cartoon_cat.glb" id="6_75vfm"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_sh265"]
@@ -31,3 +33,15 @@ disabled = true
 
 [node name="Sketchfab_Scene" parent="VisualContainer" unique_id=817555035 instance=ExtResource("6_75vfm")]
 transform = Transform3D(-0.75, 0, -6.556708e-08, 0, 0.75, 0, 6.556708e-08, 0, -0.75, 0, -1, 0)
+
+[node name="VisualController" type="Node" parent="." unique_id=413068520]
+script = ExtResource("3_gmlin")
+
+[node name="SurfaceDetector" type="Node" parent="." unique_id=116727680]
+script = ExtResource("4_lvxji")
+
+[node name="HazardHandler" type="Node" parent="." unique_id=417107586]
+
+[node name="WallRayLeft" type="RayCast3D" parent="." unique_id=984087493]
+
+[node name="WallRayRight" type="RayCast3D" parent="." unique_id=1245720253]

@@ -133,21 +133,9 @@ enum PlayerState {
 @export_range(0.0, 1.0, 0.05) var momentum_bleed: float = 0.35
 
 
-# ── Visual Feel ───────────────────────────────────────────────────────────────
-@export_group("Visual Feel")
-## Turning speed for the visual container rotation.
-@export var visual_rotation_speed: float  = 15.0
-@export var squash_on_jump: Vector3       = Vector3(0.75, 1.30, 0.75)
-@export var squash_on_land: Vector3       = Vector3(1.35, 0.70, 1.35)
-@export var squash_recovery_speed: float  = 12.0
-## Lean angle (radians) at the start of a sprint when stamina is full — subtle but present.
-@export var sprint_lean_base: float   = 0.05
-## Extra lean added as stamina drains. At 0 stamina: total lean = base + max ≈ 14°.
-@export var sprint_lean_max: float    = 0.20
-## How quickly the lean settles to its target angle.
-@export var sprint_lean_speed: float  = 6.0
-## Seconds of standing idle before the cat turns to look at the camera.
-@export var idle_look_delay: float    = 2.0
+@onready var visuals = $VisualsController
+@onready var surface = $SurfaceDetector
+@onready var hazards = $HazardHandler
 
 
 # ── Runtime Variables ─────────────────────────────────────────────────────────
@@ -199,16 +187,17 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_tick_timers(delta)
+	hazards.tick_timers(delta) # Let hazard handler do its own math
 	_apply_gravity(delta)
 
 	var input_dir := Input.get_axis("move_left", "move_right")
 	_run_state(delta, input_dir)
 
-	# ── DYNAMIC SNAP LENGTH FIX ──
+	# ── DYNAMIC SNAP LENGTH ──
 	# Stretch the snap raycast based on horizontal speed so high-velocity 
 	# movement doesn't outrun the floor detection on steep drops.
 	if is_on_floor():
-		# Base snap (0.35) + the exact horizontal distance traveled this frame
+		# Base snap + the exact horizontal distance traveled this frame
 		floor_snap_length = slope_snap_length + (absf(velocity.x) * delta)
 	else:
 		# Reset to base so we don't accidentally snap to ceilings/high walls while falling
@@ -220,7 +209,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	_update_camera_velocity(delta)
-	_update_visuals(delta, input_dir)
+	visuals.update_visuals(delta, input_dir, hazards.iframe_timer)
 
 
 # ── Timers ────────────────────────────────────────────────────────────────────
@@ -303,7 +292,7 @@ func _to(new_state: PlayerState) -> void:
 			_coyote_timer        = 0.0
 			_jump_buffer_timer   = 0.0
 			_visual_base_scale   = Vector3.ONE  # No longer crouching once airborne
-			_visual_scale_target = squash_on_jump
+			_visual_scale_target = visuals.squash_on_jump
 
 		PlayerState.OFF_BALANCE:
 			_off_balance_timer = off_balance_duration
@@ -573,7 +562,7 @@ func _air_move(delta: float, input_dir: float) -> void:
 
 
 func _land() -> void:
-	_visual_scale_target = squash_on_land
+	_visual_scale_target = visuals.squash_on_land
 	landed.emit()
 	_last_wall_jump_dir = 0.0  # Touching the floor re-arms every wall
 	# Buffered jump fires immediately on touch-down
@@ -684,7 +673,7 @@ func _try_wall_jump() -> void:
 	_wall_coyote_timer   = 0.0
 	_coyote_timer        = 0.0
 	_jump_buffer_timer   = 0.0
-	_visual_scale_target = squash_on_jump
+	_visual_scale_target = visuals.squash_on_jump
 	if current_state != PlayerState.JUMP:
 		current_state = PlayerState.JUMP
 		state_changed.emit(current_state)
@@ -760,69 +749,3 @@ func _update_camera_velocity(delta: float) -> void:
 
 		_:
 			camera_velocity = Vector2(velocity.x, velocity.y)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ── Visuals ───────────────────────────────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────────────────────
-
-func _update_visuals(delta: float, input_dir: float) -> void:
-	if absf(input_dir) > 0.1:
-		_last_input_dir = input_dir
-
-	# ── Facing rotation ───────────────────────────────────────────────────────
-	# Runs every frame — not only while input is held — so turns always finish
-	# after the key is released, and the idle glance can play with no input at all.
-	if current_state != PlayerState.OFF_BALANCE and current_state != PlayerState.STUNNED:
-		# Travel facing: Right = 270° (3π/2) | Left = 90° (π/2)
-		var target_rot := 3.0 * PI / 2.0 if _last_input_dir > 0.0 else PI / 2.0
-		# Idle glance: after a short pause standing still, look at the camera (180°)
-		if current_state == PlayerState.IDLE and _idle_timer >= idle_look_delay:
-			target_rot = PI
-
-		# The engine reads Euler yaw in (-π, π]; normalize to [0, τ) so the plain
-		# lerp stays inside the [90°, 270°] arc. Plain lerp (NOT lerp_angle) is
-		# deliberate: every turn sweeps through 180°, so the cat shows its face
-		# to the camera mid-turn instead of turning through its back.
-		var current_yaw := visual_container.rotation.y
-		if current_yaw < 0.0:
-			current_yaw += TAU
-		visual_container.rotation.y = lerp(
-			current_yaw, target_rot,
-			clampf(visual_rotation_speed * delta, 0.0, 1.0)  # Clamped — no overshoot on frame spikes
-		)
-
-	# ── Off-balance wobble / sprint lean ──────────────────────────────────────
-	if current_state == PlayerState.OFF_BALANCE:
-		# rotation.x tilts in the screen XY plane (world Z-axis) — visible side sway.
-		visual_container.rotation.x = sin(Time.get_ticks_msec() * 0.012) * 0.18
-	elif current_state == PlayerState.STUNNED:
-		# Bigger, faster KO shake — reads as "knocked out" rather than "tired"
-		visual_container.rotation.x = sin(Time.get_ticks_msec() * 0.02) * 0.35
-	elif current_state == PlayerState.SPRINT:
-		# Lean forward in the direction of travel using rotation.x.
-		# For a −Z-facing model after the yaw above, local X = world ±Z, so
-		# rotation.x tilts in the screen XY plane. Negative lean_amt = forward
-		# lean for both facing directions automatically.
-		var stamina_t := sprint_stamina / maxf(sprint_stamina_max, 0.001)
-		var lean_amt  := sprint_lean_base + sprint_lean_max * (1.0 - stamina_t)
-		visual_container.rotation.x = lerp_angle(
-			visual_container.rotation.x, -lean_amt, sprint_lean_speed * delta
-		)
-	else:
-		visual_container.rotation.x = lerp_angle(
-			visual_container.rotation.x, 0.0, 8.0 * delta
-		)
-
-	# ── Squash & stretch ──────────────────────────────────────────────────────
-	visual_container.scale = visual_container.scale.lerp(
-		_visual_scale_target, squash_recovery_speed * delta
-	)
-	# Recover toward _visual_base_scale — respects crouch/slide resting scale, not always ONE
-	_visual_scale_target = _visual_scale_target.lerp(_visual_base_scale, squash_recovery_speed * delta)
-
-	# ── Foot anchoring ────────────────────────────────────────────────────────
-	# The VisualContainer is centred at y=0 (mid-capsule). Scaling in Y moves the
-	# bottom away from the floor. This compensates so the feet never float or sink.
-	# Formula: shift down by (1 - scale.y) * half_height, keep bottom at -half_height.
-	visual_container.position.y = (visual_container.scale.y - 1.0) * stand_half_height
