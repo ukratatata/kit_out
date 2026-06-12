@@ -1,40 +1,67 @@
-> Setting & Visuals: > - Theme: Cat-themed cartoony aesthetic.
+KIT OUT — Small Game Design Document
+Last synced with implementation: June 2026
+
+> Setting & Visuals:
+
+- Theme: Cat-themed cartoony aesthetic.
 
 - Perspective: 2.5D. Graphics are 3D, but player movement is strictly locked to the 2D plane (X and Y axes).
 
-- Scenario: TBD (Deciding between a game-show environment or urban rooftop parkour).
+- Scenario: GAME-SHOW ARENA (decided). Theatrical obstacle-course staging in the Doritos Crash Course lineage. All future art, props, and obstacle theming follow this direction.
 
-> Mechanics & Physics: 
+> Player Movement (IMPLEMENTED — scripts/player.gd):
 
-- Movement: Standard speed with a Sprint option. Sprinting accelerates the player, but sprinting for too long triggers a "lose balance" state (like in Doritos Crash Course).
+- State machine: IDLE, RUN, SPRINT, OFF_BALANCE, JUMP, FALL, CROUCH, SLIDE.
 
-- Friction: Special ice-type surfaces cause sliding. [AI Note: Help me test and tweak normal ground friction to decide between an immediate stop or slight inertia].
+- Movement: run speed 12 u/s, acceleration 100, ground friction 80.
+  Friction decision (was open): slight inertia, not immediate stop. Momentum above
+  run speed (from slides/jumps) bleeds gradually (momentum_bleed 0.35) instead of snapping.
 
-- Sliding: A slide action that allows accelerating downhill and passing under low obstacles. Should include a subtle, immediate speed boost.
+- Sprint: x1.6 speed, 3.0 s of stamina, regen 1.5/s. Empty stamina triggers
+  OFF_BALANCE: 1.2 s stumble at 30% control (jumping still allowed). The cat
+  leans further forward as stamina drains — visual warning of the incoming stumble.
 
-- Game Feel: [AI Note: Provide standard starting values for Coyote Time and Jump Buffering so I can test what feels best].
+- Jump: velocity 20, gravity x4 (x1.3 extra while falling).
+  Game-feel values (were open): coyote time 0.13 s, jump buffer 0.12 s — locked after testing.
 
-> Obstacles & Interactions: 
+- Wall jump: only on surfaces in the "wall_jumpable" group. Push force (14, 18).
 
-- Swinging hammers
+- Crouch: hold-to-crouch, 40% walk speed, collision shape swap, works mid-air
+  for tight gaps (requirement met). On flat ground crouch-walking never auto-slides.
 
-- Collapsing platforms
+- Slide: +4 entry boost from the ground; physics-based slope acceleration
+  (gravity projected onto the slope, x1.5 arcade factor) — accelerates downhill,
+  brakes hard uphill; 0.5 s entry lock, release-to-stand after; downhill slides
+  are not time-limited. Landing while holding crouch converts air momentum into a slide.
 
-- Trampolines
+- Ice: surfaces in the "ice_surface" group use friction 8 instead of 80.
 
-- Slippery ice sections
+- Personality: the cat always turns through the camera-facing angle on direction
+  changes, and glances at the camera after 0.4 s of standing idle.
 
-- Ropes (swinging/climbing)
+> Camera (IMPLEMENTED — scripts/camera_follow.gd):
 
+- Follows X/Y with a deadzone, leads ahead of the player, hard-clamps both axes,
+  dynamic tilt driven by state-filtered velocity (player.camera_velocity),
+  trauma-based screen shake (hook: player.took_damage signal).
+
+- TODO: flip the lead offset when running left; separate ahead/behind clamp distances.
+
+> Obstacles & Interactions (PHASE 3 — NEXT UP):
+
+- Swinging hammers (first to build)
 - Skipping Rope-style hammers
-
+- Collapsing platforms
+- Trampolines
+- Slippery ice sections (player-side support done)
+- Ropes (swinging/climbing)
 - Projectiles/Shooting obstacles to dodge
-
-- Wall jumping (only on specific tagged wall types)
-
-- Crouching through low gaps (must work mid-jump)
-
 - Bubble-style jumping pads (disappear after one use for a couple of seconds)
+- Wall jumping surfaces (player-side support done)
+- Crouching through low gaps (done, works mid-jump)
 
-> Camera: > Follows the player on the X and Y axes (fixed Z-axis), positioned slightly ahead of the player's movement direction to show upcoming obstacles.
+> Open decisions:
 
+- Multiplayer: time attack ships first (race timer + best times, Phase 5);
+  local split-screen considered for a later version.
+- Win/loss structure, level count, and progression: to define during Phase 4-5.

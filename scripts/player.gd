@@ -2,13 +2,6 @@
 # Kit Out — Player Controller
 # State machine: IDLE · RUN · SPRINT · OFF_BALANCE · JUMP · FALL · CROUCH · SLIDE
 #
-# ── SCENE SETUP REQUIRED ────────────────────────────────────────────────────
-# The player scene needs one additional node before crouching works:
-#   1. Add a second CollisionShape3D child to Player, name it "CrouchCollision"
-#   2. Give it a CapsuleShape3D with radius 0.5, height 0.8 (half the standing height)
-#   3. In the Inspector, tick "Disabled" on it so it starts off
-#   4. Assign it to the `crouch_collision` export slot in this node's Inspector
-#
 # Wall jumping: tag surfaces with the group "wall_jumpable" in the scene
 # Ice surfaces: tag surfaces with the group "ice_surface" in the scene
 # ────────────────────────────────────────────────────────────────────────────
@@ -41,7 +34,7 @@ enum PlayerState {
 @onready var visual_container: Node3D       = $VisualContainer
 @onready var stand_collision: CollisionShape3D = $CollisionShape3D
 
-## See setup instructions at the top of this file.
+## Second collision shape used while crouching/sliding. Assign in the Inspector.
 @export var crouch_collision: CollisionShape3D
 
 
@@ -105,8 +98,7 @@ enum PlayerState {
 ## At the default of 60 you'll rarely hit it — gravity is the real limiter.
 @export var slide_max_speed: float     = 60.0
 ## Multiplier on the physics-based slope gravity during a slide.
-## 1.0 = realistic. 1.5 = arcade-boosted (default). Reset this in the Inspector
-## after updating — the old value (15.0) was a raw force and no longer applies.
+## 1.0 = realistic. 1.5 = arcade-boosted (default).
 @export var downhill_force: float      = 1.5
 
 @export_group("Physics Tuning")
@@ -129,7 +121,7 @@ enum PlayerState {
 
 # ── Visual Feel ───────────────────────────────────────────────────────────────
 @export_group("Visual Feel")
-## Turning speed for the visual container rotation (replaces the old hardcoded 0.2).
+## Turning speed for the visual container rotation.
 @export var visual_rotation_speed: float  = 15.0
 @export var squash_on_jump: Vector3       = Vector3(0.75, 1.30, 0.75)
 @export var squash_on_land: Vector3       = Vector3(1.35, 0.70, 1.35)
@@ -140,6 +132,8 @@ enum PlayerState {
 @export var sprint_lean_max: float    = 0.20
 ## How quickly the lean settles to its target angle.
 @export var sprint_lean_speed: float  = 6.0
+## Seconds of standing idle before the cat turns to look at the camera.
+@export var idle_look_delay: float    = 2.0
 
 
 # ── Runtime Variables ─────────────────────────────────────────────────────────
@@ -150,6 +144,7 @@ var _jump_buffer_timer: float = 0.0
 var _off_balance_timer: float = 0.0
 var _slide_timer: float       = 0.0
 var _slide_lock_timer: float  = 0.0  # Crouch-release locked for this long after slide entry
+var _idle_timer: float        = 0.0  # Time spent standing in IDLE — drives the camera glance
 
 var sprint_stamina: float     = 0.0
 
@@ -175,6 +170,9 @@ func _ready() -> void:
 	floor_snap_length = slope_snap_length  # Prevents stepping/bouncing on ramps
 	if crouch_collision:
 		crouch_collision.disabled = true
+	# Spawn looking at the camera (yaw 180°). First input turns the cat toward
+	# travel direction with a clean quarter-turn instead of a 3/4 spin from yaw 0.
+	visual_container.rotation.y = PI
 
 
 func _physics_process(delta: float) -> void:
@@ -188,7 +186,7 @@ func _physics_process(delta: float) -> void:
 	velocity.z = 0.0
 	move_and_slide()
 
-	_update_camera_velocity()
+	_update_camera_velocity(delta)
 	_update_visuals(delta, input_dir)
 
 
@@ -207,6 +205,9 @@ func _tick_timers(delta: float) -> void:
 	if current_state == PlayerState.SLIDE:
 		_slide_timer      = maxf(_slide_timer      - delta, 0.0)
 		_slide_lock_timer = maxf(_slide_lock_timer - delta, 0.0)
+
+	# Idle glance timer — counts up only while standing idle
+	_idle_timer = _idle_timer + delta if current_state == PlayerState.IDLE else 0.0
 
 	if current_state != PlayerState.SPRINT:
 		sprint_stamina = minf(sprint_stamina + stamina_regen_rate * delta, sprint_stamina_max)
@@ -291,8 +292,8 @@ func _to(new_state: PlayerState) -> void:
 # ── States ───────────────────────────────────────────────────────────────────
 # ─────────────────────────────────────────────────────────────────────────────
 
-func _state_idle(_delta: float, input_dir: float) -> void:
-	velocity.x = move_toward(velocity.x, 0.0, friction * _delta)
+func _state_idle(delta: float, input_dir: float) -> void:
+	velocity.x = move_toward(velocity.x, 0.0, friction * delta)
 
 	if not is_on_floor():        _to(PlayerState.FALL);   return
 	if _jump_pressed():          _to(PlayerState.JUMP);   return
@@ -531,8 +532,14 @@ func _try_wall_jump() -> void:
 func _get_friction() -> float:
 	if not is_on_floor():
 		return friction * 0.25
-	var col := get_last_slide_collision()
-	if col:
+	# Check every contact from the last physics step, not just the most recent one.
+	# When touching a wall and the floor at the same time, the last collision can be
+	# the wall — which would silently skip ice detection. Only floor-ish contacts
+	# (normal pointing mostly up) are considered.
+	for i in get_slide_collision_count():
+		var col := get_slide_collision(i)
+		if col.get_normal().y < 0.5:
+			continue  # Wall or ceiling contact — not relevant for ground friction
 		var body := col.get_collider()
 		if body and body.is_in_group("ice_surface"):
 			return ice_friction
@@ -552,11 +559,13 @@ func _set_crouch(crouching: bool) -> void:
 # The camera reads camera_velocity, never target.velocity directly.
 # Each state sets what it *wants* the camera to see, filtering out physics chaos.
 
-func _update_camera_velocity() -> void:
+func _update_camera_velocity(delta: float) -> void:
 	match current_state:
 		PlayerState.OFF_BALANCE:
-			# Dampen heavily — don't let the camera track the stumble
-			camera_velocity = camera_velocity.lerp(Vector2.ZERO, 0.08)
+			# Dampen heavily — don't let the camera track the stumble.
+			# Delta-scaled (≈ the old 0.08/frame at 60fps) so it behaves the
+			# same at every framerate.
+			camera_velocity = camera_velocity.lerp(Vector2.ZERO, minf(5.0 * delta, 1.0))
 
 		PlayerState.SLIDE:
 			# Slight exaggeration to sell the speed
@@ -573,35 +582,38 @@ func _update_camera_velocity() -> void:
 func _update_visuals(delta: float, input_dir: float) -> void:
 	if absf(input_dir) > 0.1:
 		_last_input_dir = input_dir
-			
-		# ── Facing rotation (was hardcoded 0.2 weight — now delta-correct) ────────
-		if current_state != PlayerState.OFF_BALANCE:
-			var current_yaw := visual_container.rotation.y
-			# El motor de físicas a veces lee la rotación 270º como -90º. 
-			# Lo convertimos a estrictamente positivo sumándole TAU (2 * PI) 
-			# para que nuestro lerp() matemático no se rompa.
-			if current_yaw < 0.0:
-				current_yaw += TAU
-			# Derecha = 270º (3*PI/2) | Izquierda = 90º (PI/2)
-			var target_rot := 3.0 * PI / 2.0 if _last_input_dir > 0.0 else PI / 2.0 
-			
-			# Al usar un lerp() normal entre 90 y 270, forzamos a que la rotación 
-			# pase obligatoriamente por la mitad (180º o PI), mirando hacia la pantalla.
-			visual_container.rotation.y = lerp(
-				current_yaw, target_rot, visual_rotation_speed * delta
-			)
 
+	# ── Facing rotation ───────────────────────────────────────────────────────
+	# Runs every frame — not only while input is held — so turns always finish
+	# after the key is released, and the idle glance can play with no input at all.
+	if current_state != PlayerState.OFF_BALANCE:
+		# Travel facing: Right = 270° (3π/2) | Left = 90° (π/2)
+		var target_rot := 3.0 * PI / 2.0 if _last_input_dir > 0.0 else PI / 2.0
+		# Idle glance: after a short pause standing still, look at the camera (180°)
+		if current_state == PlayerState.IDLE and _idle_timer >= idle_look_delay:
+			target_rot = PI
 
+		# The engine reads Euler yaw in (-π, π]; normalize to [0, τ) so the plain
+		# lerp stays inside the [90°, 270°] arc. Plain lerp (NOT lerp_angle) is
+		# deliberate: every turn sweeps through 180°, so the cat shows its face
+		# to the camera mid-turn instead of turning through its back.
+		var current_yaw := visual_container.rotation.y
+		if current_yaw < 0.0:
+			current_yaw += TAU
+		visual_container.rotation.y = lerp(
+			current_yaw, target_rot,
+			clampf(visual_rotation_speed * delta, 0.0, 1.0)  # Clamped — no overshoot on frame spikes
+		)
 
-	# ── Off-balance wobble ────────────────────────────────────────────────────
+	# ── Off-balance wobble / sprint lean ──────────────────────────────────────
 	if current_state == PlayerState.OFF_BALANCE:
 		# rotation.x tilts in the screen XY plane (world Z-axis) — visible side sway.
 		visual_container.rotation.x = sin(Time.get_ticks_msec() * 0.012) * 0.18
 	elif current_state == PlayerState.SPRINT:
 		# Lean forward in the direction of travel using rotation.x.
-		# For a −Z-facing model after Ry(−PI/2), local X = world +Z, so rotation.x
-		# tilts in the screen XY plane. Negative lean_amt = forward lean for both
-		# facing directions automatically.
+		# For a −Z-facing model after the yaw above, local X = world ±Z, so
+		# rotation.x tilts in the screen XY plane. Negative lean_amt = forward
+		# lean for both facing directions automatically.
 		var stamina_t := sprint_stamina / maxf(sprint_stamina_max, 0.001)
 		var lean_amt  := sprint_lean_base + sprint_lean_max * (1.0 - stamina_t)
 		visual_container.rotation.x = lerp_angle(
