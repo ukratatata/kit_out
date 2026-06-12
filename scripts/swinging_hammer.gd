@@ -88,4 +88,4 @@ func _hit(player: KitOutPlayer) -> void:
 	var dir := signf(player.global_position.x - global_position.x)
 	if dir == 0.0:
 		dir = 1.0
-	player.apply_hit(Vector2(dir * knockback.x, knockback.y))
+	player.hazards.apply_hit(Vector2(dir * knockback.x, knockback.y))

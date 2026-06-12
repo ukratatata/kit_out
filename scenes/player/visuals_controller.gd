@@ -18,7 +18,8 @@ extends Node
 
 # Grab a reference to the main player script to read its state!
 @onready var player: KitOutPlayer = get_parent()
-@onready var visual_container: Node3D = player.visual_container
+@onready var visual_container: Node3D = $"../VisualContainer"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ── Visuals ───────────────────────────────────────────────────────────────────
 # ─────────────────────────────────────────────────────────────────────────────

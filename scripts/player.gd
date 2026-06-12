@@ -84,9 +84,6 @@ enum PlayerState {
 @export var off_balance_duration: float  = 1.2
 ## Fraction of normal horizontal control during the stumble (0.0 – 1.0).
 @export var off_balance_control: float   = 0.3
-## Controls-locked duration after being hit by a hazard (hammer, projectile…).
-@export var stun_duration: float         = 0.8
-
 
 # ── Crouch & Slide ────────────────────────────────────────────────────────────
 @export_group("Crouch & Slide")
@@ -144,7 +141,6 @@ var _idle_timer: float        = 0.0  # Time spent standing in IDLE — drives th
 var _wall_coyote_timer: float    = 0.0
 var _wall_coyote_normal_x: float = 0.0  # Wall normal sign captured for the coyote window
 var _last_wall_jump_dir: float   = 0.0  # Normal sign of the last wall jumped — blocks same-wall re-jumps
-var _stun_timer: float           = 0.0  # Controls locked while > 0 — set by apply_hit
 
 var sprint_stamina: float     = 0.0
 
@@ -218,7 +214,6 @@ func _tick_timers(delta: float) -> void:
 	_jump_buffer_timer = maxf(_jump_buffer_timer  - delta, 0.0)
 	_off_balance_timer = maxf(_off_balance_timer  - delta, 0.0)
 	_wall_coyote_timer = maxf(_wall_coyote_timer  - delta, 0.0)
-	_stun_timer        = maxf(_stun_timer         - delta, 0.0)
 
 	if current_state == PlayerState.SLIDE:
 		_slide_timer      = maxf(_slide_timer      - delta, 0.0)
@@ -520,7 +515,7 @@ func _state_stunned(delta: float, _input_dir: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, cur_fric * 0.5 * delta)
 		surface.apply_surface_slip(delta, current_surface)
 
-	if _stun_timer > 0.0:
+	if hazards.stun_timer > 0.0:
 		return
 	# Recover
 	if not is_on_floor():
@@ -575,22 +570,6 @@ func _land() -> void:
 ## Unified jump check: floor, coyote, OR (for grounded states) just pressed.
 func _jump_pressed() -> bool:
 	return Input.is_action_just_pressed("jump")
-
-
-## Public hit interface for hazards (hammers, projectiles, traps…).
-## Sets knockback velocity, fires the took_damage signal (camera shake
-## auto-connects to it), and staggers the player: grounded horizontal hits
-## enter OFF_BALANCE; launched hits go to FALL so air physics handles the arc.
-## State exit cleanup runs automatically — a hit during a slide restores the
-## standing collision shape, a hit mid-air-crouch resets it, etc.
-func apply_hit(knockback: Vector2) -> void:
-	# Velocity is SET, not added — every hit produces the exact same launch
-	# regardless of how fast the player was moving when it landed.
-	velocity.x = knockback.x
-	velocity.y = knockback.y
-	_stun_timer = stun_duration  # Re-hits refresh the lock
-	took_damage.emit()
-	_to(PlayerState.STUNNED)
 
 
 ## Reads crouch input while airborne and toggles the crouched collision shape.
