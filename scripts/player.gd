@@ -1,10 +1,9 @@
 # res://scripts/player.gd
 # Kit Out — Player Controller
-# State machine: IDLE · RUN · SPRINT · OFF_BALANCE · JUMP · FALL · CROUCH · SLIDE
+# State machine: IDLE · RUN · SPRINT · OFF_BALANCE · JUMP · FALL · CROUCH · SLIDE · STUNNED
 #
-# Wall jumping: tag surfaces with the group "wall_jumpable" in the scene
-# Special surfaces (ice, mud…): create SurfaceData resources (.tres) and add
-#   them to the "custom_surfaces" array — floors are matched by node group.
+# Wall jumping : tag surfaces with the group "wall_jumpable"
+# Special surfaces: create SurfaceData .tres resources, add to SurfaceDetector.custom_surfaces
 # ────────────────────────────────────────────────────────────────────────────
 
 class_name KitOutPlayer
@@ -14,7 +13,7 @@ extends CharacterBody3D
 # ── Signals ──────────────────────────────────────────────────────────────────
 signal state_changed(new_state: PlayerState)
 signal landed        ## Connect to particle emitters, audio, etc.
-signal took_damage   ## Camera connects here to trigger screen shake
+signal took_damage   ## Camera auto-connects here for screen shake
 
 
 # ── States ───────────────────────────────────────────────────────────────────
@@ -33,8 +32,13 @@ enum PlayerState {
 
 
 # ── Node References ───────────────────────────────────────────────────────────
-@onready var visual_container: Node3D       = $VisualContainer
+@onready var visual_container: Node3D          = $VisualContainer
 @onready var stand_collision: CollisionShape3D = $CollisionShape3D
+@onready var visuals  = $VisualsController
+@onready var surface  = $SurfaceDetector
+@onready var hazards  = $HazardHandler
+@onready var _wall_ray_left:  RayCast3D = $WallRayLeft
+@onready var _wall_ray_right: RayCast3D = $WallRayRight
 
 ## Second collision shape used while crouching/sliding. Assign in the Inspector.
 @export var crouch_collision: CollisionShape3D
@@ -52,10 +56,10 @@ enum PlayerState {
 
 # ── Vertical Movement ─────────────────────────────────────────────────────────
 @export_group("Vertical Movement")
-@export var jump_velocity: float        = 20.0
-@export var gravity_multiplier: float   = 4.0
-## Extra gravity multiplier applied only while falling — makes the arc snappier.
-@export var fall_gravity_bonus: float   = 1.3
+@export var jump_velocity: float      = 20.0
+@export var gravity_multiplier: float = 4.0
+## Extra gravity bonus while falling — makes the arc snappier.
+@export var fall_gravity_bonus: float = 1.3
 
 
 # ── Jump Feel ─────────────────────────────────────────────────────────────────
@@ -113,6 +117,8 @@ enum PlayerState {
 ## Used to anchor the visual to the feet during squash. Update if you resize the capsule.
 @export var stand_half_height: float  = 1.0
 
+
+# ── Air Control ───────────────────────────────────────────────────────────────
 @export_group("Air Control")
 ## Passive horizontal drag while airborne, as a fraction of ground friction.
 ## Low values let slide-jump momentum survive the full arc.
@@ -124,12 +130,7 @@ enum PlayerState {
 @export_range(0.0, 1.0, 0.05) var momentum_bleed: float = 0.35
 
 
-@onready var visuals = $VisualsController
-@onready var surface = $SurfaceDetector
-@onready var hazards = $HazardHandler
-
-
-# ── Runtime Variables ─────────────────────────────────────────────────────────
+# ── Runtime ───────────────────────────────────────────────────────────────────
 var current_state: PlayerState = PlayerState.FALL
 
 var _coyote_timer: float      = 0.0
@@ -210,10 +211,11 @@ func _tick_timers(delta: float) -> void:
 		_coyote_timer = coyote_time
 	_was_on_floor = is_on_floor()
 
-	_coyote_timer      = maxf(_coyote_timer      - delta, 0.0)
-	_jump_buffer_timer = maxf(_jump_buffer_timer  - delta, 0.0)
-	_off_balance_timer = maxf(_off_balance_timer  - delta, 0.0)
-	_wall_coyote_timer = maxf(_wall_coyote_timer  - delta, 0.0)
+	_coyote_timer             = maxf(_coyote_timer             - delta, 0.0)
+	_jump_buffer_timer        = maxf(_jump_buffer_timer        - delta, 0.0)
+	_off_balance_timer        = maxf(_off_balance_timer        - delta, 0.0)
+	_wall_coyote_timer        = maxf(_wall_coyote_timer        - delta, 0.0)
+	_same_wall_cooldown_timer = maxf(_same_wall_cooldown_timer - delta, 0.0)
 
 	if current_state == PlayerState.SLIDE:
 		_slide_timer      = maxf(_slide_timer      - delta, 0.0)
@@ -282,6 +284,9 @@ func _to(new_state: PlayerState) -> void:
 			_jump_buffer_timer   = 0.0
 			_visual_base_scale   = Vector3.ONE  # No longer crouching once airborne
 			_visual_scale_target = visuals.squash_on_jump
+			# Momentum reward: slide-jumping above run speed gets a 15% horizontal boost
+			if current_state == PlayerState.SLIDE and absf(velocity.x) > speed:
+				velocity.x *= 1.15
 
 		PlayerState.OFF_BALANCE:
 			_off_balance_timer = off_balance_duration

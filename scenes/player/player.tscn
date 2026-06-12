@@ -11,7 +11,8 @@
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_sh265"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lvxji"]
-height = 1.0
+radius = 0.45
+height = 0.9
 
 [node name="Player" type="CharacterBody3D" unique_id=1912640473 node_paths=PackedStringArray("crouch_collision")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -28,7 +29,7 @@ crouch_collision = NodePath("CrouchCollision")
 shape = SubResource("CapsuleShape3D_sh265")
 
 [node name="CrouchCollision" type="CollisionShape3D" parent="." unique_id=617778070]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.55, 0)
 shape = SubResource("CapsuleShape3D_lvxji")
 disabled = true
 
@@ -48,5 +49,9 @@ custom_surfaces = Array[ExtResource("5_0owmy")]([ExtResource("6_qek5x")])
 script = ExtResource("7_5gtgg")
 
 [node name="WallRayLeft" type="RayCast3D" parent="." unique_id=984087493]
+target_position = Vector3(-0.8, 0, 0)
+collision_mask = 1
 
 [node name="WallRayRight" type="RayCast3D" parent="." unique_id=1245720253]
+target_position = Vector3(0.8, 0, 0)
+collision_mask = 1
