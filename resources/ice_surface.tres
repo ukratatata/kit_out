@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SurfaceData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/surface_data.gd" id="1_ice"]
+
+[resource]
+script = ExtResource("1_ice")
+group_name = "ice_surface"
+friction = 8.0
+acceleration_mult = 0.15
+max_speed_mult = 1.0
+slope_slip = 1.0
