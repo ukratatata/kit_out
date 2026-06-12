@@ -39,6 +39,9 @@ extends Camera3D
 @export_group("Dynamic Camera Tilt")
 @export var rotation_speed: float    = 4.0
 @export var look_side_angle: float   = 12.0
+## Horizontal speed at which the side tilt reaches its full angle.
+## Below this, tilt scales proportionally — slow drifts get tiny tilts, no snap.
+@export var tilt_full_speed: float   = 8.0
 @export var look_up_angle: float     = 8.0
 @export var look_down_angle: float   = -10.0
 
@@ -64,7 +67,7 @@ var _shake_offset: Vector3 = Vector3.ZERO
 
 func _ready() -> void:
 	base_rotation_x = rotation.x
-	target_rot_y    = deg_to_rad(-look_side_angle)
+	target_rot_y    = 0.0  # Straight-on at spawn — tilt is now speed-proportional
 
 	if target:
 		target_cam_pos   = global_position
@@ -130,10 +133,12 @@ func _physics_process(delta: float) -> void:
 	# ── 5. Dynamic Tilt (reads camera_velocity, not raw physics) ─────────────
 	var target_rot_x := base_rotation_x
 
-	if cam_vel.x > 0.5:
-		target_rot_y = deg_to_rad(-look_side_angle)
-	elif cam_vel.x < -0.5:
-		target_rot_y = deg_to_rad(look_side_angle)
+	# Side tilt proportional to horizontal speed — no threshold snap. A slow
+	# icy drift earns ~1°, a sprint earns the full angle, and the camera
+	# returns to straight-on when the player stands still (pairs nicely with
+	# the cat's idle glance at the camera).
+	var side_t := clampf(cam_vel.x / tilt_full_speed, -1.0, 1.0)
+	target_rot_y = deg_to_rad(-look_side_angle * side_t)
 
 	if cam_vel.y > 1.0:
 		target_rot_x = base_rotation_x + deg_to_rad(look_up_angle)

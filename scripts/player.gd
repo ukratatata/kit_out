@@ -159,6 +159,7 @@ var _idle_timer: float        = 0.0  # Time spent standing in IDLE — drives th
 var _wall_coyote_timer: float    = 0.0
 var _wall_coyote_normal_x: float = 0.0  # Wall normal sign captured for the coyote window
 var _last_wall_jump_dir: float   = 0.0  # Normal sign of the last wall jumped — blocks same-wall re-jumps
+var _stumble_on_land: bool       = false  # Set by apply_hit: play OFF_BALANCE on touchdown
 
 var sprint_stamina: float     = 0.0
 
@@ -533,8 +534,14 @@ func _land() -> void:
 	_visual_scale_target = squash_on_land
 	landed.emit()
 	_last_wall_jump_dir = 0.0  # Touching the floor re-arms every wall
+	# A pending hit-stagger beats everything: landing from a knockback arc
+	# plays the stumble and eats any buffered jump — no instant recovery.
+	if _stumble_on_land:
+		_stumble_on_land   = false
+		_jump_buffer_timer = 0.0
+		_to(PlayerState.OFF_BALANCE)
 	# Buffered jump fires immediately on touch-down
-	if _jump_buffer_timer > 0.0:
+	elif _jump_buffer_timer > 0.0:
 		_to(PlayerState.JUMP)
 	elif Input.is_action_pressed("crouch") and absf(velocity.x) > slide_end_speed:
 		_to(PlayerState.SLIDE)  # Land-slide: convert air momentum into a ground slide
@@ -549,6 +556,24 @@ func _land() -> void:
 ## Unified jump check: floor, coyote, OR (for grounded states) just pressed.
 func _jump_pressed() -> bool:
 	return Input.is_action_just_pressed("jump")
+
+
+## Public hit interface for hazards (hammers, projectiles, traps…).
+## Sets knockback velocity, fires the took_damage signal (camera shake
+## auto-connects to it), and staggers the player: grounded horizontal hits
+## enter OFF_BALANCE; launched hits go to FALL so air physics handles the arc.
+## State exit cleanup runs automatically — a hit during a slide restores the
+## standing collision shape, a hit mid-air-crouch resets it, etc.
+func apply_hit(knockback: Vector2) -> void:
+	velocity.x = knockback.x
+	velocity.y = knockback.y
+	took_damage.emit()
+	if is_on_floor() and knockback.y <= 0.0:
+		_to(PlayerState.OFF_BALANCE)
+	else:
+		# Launched: fly the knockback arc in FALL, then stumble on touchdown
+		_stumble_on_land = true
+		_to(PlayerState.FALL)
 
 
 ## Reads crouch input while airborne and toggles the crouched collision shape.
@@ -622,6 +647,7 @@ func _try_wall_jump() -> void:
 	velocity.x           = wall_nx * wall_jump_force.x
 	velocity.y           = wall_jump_force.y
 	_last_wall_jump_dir  = wall_nx
+	_stumble_on_land     = false  # Wall-jumping out of a knockback arc = clean recovery
 	_wall_coyote_timer   = 0.0
 	_coyote_timer        = 0.0
 	_jump_buffer_timer   = 0.0

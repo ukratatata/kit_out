@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://qgk1pgd74ju7" path="res://addons/kenney_prototype_textures/orange/texture_13.png" id="4_48ne7"]
 [ext_resource type="Script" uid="uid://dc6x5bd1ttk1i" path="res://scripts/debug_hud.gd" id="4_v45ci"]
 [ext_resource type="Texture2D" uid="uid://cq6ir48vkrjb0" path="res://addons/kenney_prototype_textures/light/texture_08.png" id="5_6xh4u"]
+[ext_resource type="PackedScene" path="res://scenes/props/swinging_hammer.tscn" id="8_hfwtw"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_yautc"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -296,6 +297,9 @@ use_collision = true
 collision_mask = 2
 size = Vector3(100, 1, 4)
 material = SubResource("StandardMaterial3D_fr1um")
+
+[node name="SwingingHammer" parent="World" unique_id=1840815869 instance=ExtResource("8_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.416216, 6.000229, 0)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1908956664 node_paths=PackedStringArray("player")]
 script = ExtResource("4_v45ci")
