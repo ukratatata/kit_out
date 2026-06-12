@@ -1,0 +1,44 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/collapsing_platform.gd" id="1_collapse"]
+
+[sub_resource type="StandardMaterial3D" id="mat_platform"]
+albedo_color = Color(0.85, 0.55, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="mesh_platform"]
+material = SubResource("mat_platform")
+size = Vector3(6, 0.5, 4)
+
+[sub_resource type="BoxShape3D" id="shape_platform"]
+size = Vector3(6, 0.5, 4)
+
+[sub_resource type="BoxShape3D" id="shape_trigger"]
+size = Vector3(5.6, 0.3, 3.6)
+
+
+[node name="CollapsingPlatform" type="Node3D" node_paths=PackedStringArray("trigger_area")]
+script = ExtResource("1_collapse")
+trigger_area = NodePath("Body/TriggerZone")
+
+
+[node name="Body" type="AnimatableBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+
+[node name="PlatformMesh" type="MeshInstance3D" parent="Body"]
+mesh = SubResource("mesh_platform")
+
+
+[node name="PlatformShape" type="CollisionShape3D" parent="Body"]
+shape = SubResource("shape_platform")
+
+
+[node name="TriggerZone" type="Area3D" parent="Body"]
+collision_layer = 0
+collision_mask = 2
+
+
+[node name="TriggerShape" type="CollisionShape3D" parent="Body/TriggerZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("shape_trigger")

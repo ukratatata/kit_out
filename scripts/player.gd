@@ -75,6 +75,12 @@ enum PlayerState {
 @export var wall_coyote_time: float = 0.15
 ## Maximum fall speed while pressing into a jumpable wall — the sticky wall slide.
 @export var wall_slide_speed: float = 4.0
+## Proximity detection range. 0.8 = 0.3 units past the capsule edge.
+@export var wall_check_distance: float = 0.8
+## Window after a wall jump during which jumping the same wall is penalised.
+@export var same_wall_cooldown: float  = 0.8
+## Vertical force multiplier for the penalised same-wall jump.
+@export_range(0.0, 1.0, 0.05) var same_wall_penalty: float = 0.5
 
 
 # ── Sprint & Balance ──────────────────────────────────────────────────────────
@@ -142,6 +148,7 @@ var _idle_timer: float        = 0.0  # Time spent standing in IDLE — drives th
 var _wall_coyote_timer: float    = 0.0
 var _wall_coyote_normal_x: float = 0.0  # Wall normal sign captured for the coyote window
 var _last_wall_jump_dir: float   = 0.0  # Normal sign of the last wall jumped — blocks same-wall re-jumps
+var _same_wall_cooldown_timer: float = 0.0
 
 var sprint_stamina: float     = 0.0
 
@@ -557,6 +564,8 @@ func _air_move(delta: float, input_dir: float) -> void:
 
 func _land() -> void:
 	_visual_scale_target = visuals.squash_on_land
+	_last_wall_jump_dir       = 0.0
+	_same_wall_cooldown_timer = 0.0  # Floor resets the same-wall penalty
 	landed.emit()
 	_last_wall_jump_dir = 0.0  # Touching the floor re-arms every wall
 	# Buffered jump fires immediately on touch-down
@@ -684,3 +693,12 @@ func _update_camera_velocity(delta: float) -> void:
 
 		_:
 			camera_velocity = Vector2(velocity.x, velocity.y)
+
+
+# In player.gd — a single public hook, nothing else exposed
+func enter_stunned() -> void:
+	_to(PlayerState.STUNNED)
+
+# In player.gd — just delegates, no logic here
+func apply_hit(knockback: Vector2) -> void:
+	hazards.apply_hit(knockback)

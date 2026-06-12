@@ -6,6 +6,8 @@
 [ext_resource type="Texture2D" uid="uid://qgk1pgd74ju7" path="res://addons/kenney_prototype_textures/orange/texture_13.png" id="4_48ne7"]
 [ext_resource type="Script" uid="uid://dc6x5bd1ttk1i" path="res://scripts/debug_hud.gd" id="4_v45ci"]
 [ext_resource type="Texture2D" uid="uid://cq6ir48vkrjb0" path="res://addons/kenney_prototype_textures/light/texture_08.png" id="5_6xh4u"]
+[ext_resource type="PackedScene" path="res://scenes/props/spinning_bar.tscn" id="7_hfwtw"]
+[ext_resource type="PackedScene" path="res://scenes/props/collapsing_platform.tscn" id="8_2mu0v"]
 [ext_resource type="PackedScene" path="res://scenes/props/swinging_hammer.tscn" id="8_hfwtw"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_yautc"]
@@ -295,6 +297,36 @@ material = SubResource("StandardMaterial3D_fr1um")
 
 [node name="SwingingHammer" parent="World/floor" unique_id=1168731471 instance=ExtResource("8_hfwtw")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.876311, 5.601387, 0)
+
+[node name="SpinningBar" parent="World/floor" unique_id=1768626329 instance=ExtResource("7_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.875832, 3.3697252, 0)
+
+[node name="CollapsingPlatform" parent="World/floor" unique_id=228467432 instance=ExtResource("8_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.305073, 4.0851707, 0)
+shake_duration = 1.0
+
+[node name="CollapsingPlatform2" parent="World/floor" unique_id=378783229 instance=ExtResource("8_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64.23001, 9.017567, 0)
+
+[node name="CollapsingPlatform3" parent="World/floor" unique_id=1592384229 instance=ExtResource("8_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.223377, 11.528964, 0)
+shake_duration = 1.0
+
+[node name="CollapsingPlatform4" parent="World/floor" unique_id=50956043 instance=ExtResource("8_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 65.488525, 14.856929, 0)
+
+[node name="CollapsingPlatform5" parent="World/floor" unique_id=1258037707 instance=ExtResource("8_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 66.55928, 18.786163, 0)
+
+[node name="CollapsingPlatform6" parent="World/floor" unique_id=1456672621 instance=ExtResource("8_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 66.36761, 22.236689, 0)
+
+[node name="CollapsingPlatform7" parent="World/floor" unique_id=1067470794 instance=ExtResource("8_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 66.13241, 26.080645, 0)
+gap_before_shake = 1.0
+
+[node name="CollapsingPlatform8" parent="World/floor" unique_id=908476929 instance=ExtResource("8_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58.256653, 29.332552, 0)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1908956664 node_paths=PackedStringArray("player")]
 script = ExtResource("4_v45ci")

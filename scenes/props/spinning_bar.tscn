@@ -1,0 +1,61 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/spinning_bar.gd" id="1_spinbar"]
+
+[sub_resource type="StandardMaterial3D" id="mat_bar"]
+albedo_color = Color(0.9, 0.15, 0.15, 1)
+
+[sub_resource type="CylinderMesh" id="mesh_bar"]
+material = SubResource("mat_bar")
+top_radius    = 0.18
+bottom_radius = 0.18
+height        = 5.2
+orientation   = 2
+
+[sub_resource type="CylinderShape3D" id="shape_bar"]
+radius = 0.18
+height = 5.2
+
+[sub_resource type="CylinderShape3D" id="shape_hit"]
+radius = 0.28
+height = 5.4
+
+[sub_resource type="StandardMaterial3D" id="mat_axle"]
+albedo_color = Color(0.3, 0.3, 0.3, 1)
+
+[sub_resource type="CylinderMesh" id="mesh_axle"]
+material = SubResource("mat_axle")
+top_radius    = 0.08
+bottom_radius = 0.08
+height        = 0.6
+
+
+[node name="SpinningBar" type="Node3D" node_paths=PackedStringArray("hitbox")]
+script = ExtResource("1_spinbar")
+hitbox = NodePath("Pivot/HitBox")
+
+
+[node name="Pivot" type="AnimatableBody3D" parent="."]
+collision_layer = 1
+collision_mask  = 0
+
+
+[node name="BarMesh" type="MeshInstance3D" parent="Pivot"]
+mesh = SubResource("mesh_bar")
+
+
+[node name="BarShape" type="CollisionShape3D" parent="Pivot"]
+shape = SubResource("shape_bar")
+
+
+[node name="AxleMesh" type="MeshInstance3D" parent="Pivot"]
+mesh = SubResource("mesh_axle")
+
+
+[node name="HitBox" type="Area3D" parent="Pivot"]
+collision_layer = 0
+collision_mask  = 2
+
+
+[node name="HitShape" type="CollisionShape3D" parent="Pivot/HitBox"]
+shape = SubResource("shape_hit")
