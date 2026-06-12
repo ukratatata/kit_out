@@ -204,6 +204,17 @@ func _physics_process(delta: float) -> void:
 	var input_dir := Input.get_axis("move_left", "move_right")
 	_run_state(delta, input_dir)
 
+	# ── DYNAMIC SNAP LENGTH FIX ──
+	# Stretch the snap raycast based on horizontal speed so high-velocity 
+	# movement doesn't outrun the floor detection on steep drops.
+	if is_on_floor():
+		# Base snap (0.35) + the exact horizontal distance traveled this frame
+		floor_snap_length = slope_snap_length + (absf(velocity.x) * delta)
+	else:
+		# Reset to base so we don't accidentally snap to ceilings/high walls while falling
+		floor_snap_length = slope_snap_length 
+	# ─────────────────────────────
+
 	# Belt-and-suspenders 2.5D lock (axis_lock_linear_z is also set in the scene)
 	velocity.z = 0.0
 	move_and_slide()
