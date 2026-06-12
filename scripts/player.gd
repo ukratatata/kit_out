@@ -45,6 +45,8 @@ enum PlayerState {
 @export var friction: float     = 80.0
 ## Used when the floor body is in the "ice_surface" group.
 @export var ice_friction: float = 8.0
+## Controls how much (from 0.0 to 1.0) the acceleartion is affected by ice
+@export_range(0.0, 1.0, 0.05) var ice_acceleration_mult: float = 0.15
 
 
 # ── Vertical Movement ─────────────────────────────────────────────────────────
@@ -225,8 +227,8 @@ func _tick_timers(delta: float) -> void:
 # ── Gravity ───────────────────────────────────────────────────────────────────
 
 func _apply_gravity(delta: float) -> void:
-	if is_on_floor():
-		return
+	#if is_on_floor(): !!!! QUITA FUNCION DE ICE SURFACE
+		#return
 	var scale := gravity_multiplier * (fall_gravity_bonus if velocity.y < 0.0 else 1.0)
 	velocity.y -= _gravity * scale * delta
 
@@ -302,7 +304,8 @@ func _to(new_state: PlayerState) -> void:
 # ─────────────────────────────────────────────────────────────────────────────
 
 func _state_idle(delta: float, input_dir: float) -> void:
-	velocity.x = move_toward(velocity.x, 0.0, friction * delta)
+	var cur_friction = _get_friction()
+	velocity.x = move_toward(velocity.x, 0.0, cur_friction * delta)
 
 	if not is_on_floor():        _to(PlayerState.FALL);   return
 	if _jump_pressed():          _to(PlayerState.JUMP);   return
@@ -311,18 +314,20 @@ func _state_idle(delta: float, input_dir: float) -> void:
 
 
 func _state_run(delta: float, input_dir: float) -> void:
-	var cur_fric := _get_friction()
+	var cur_friction := _get_friction()
 	if absf(input_dir) > 0.1:
 		var target      := input_dir * speed
 		var same_dir    = sign(velocity.x) == sign(input_dir)
 		var above_speed = same_dir and absf(velocity.x) > speed
 		if above_speed:
 			# Carrying slide momentum — bleed gently with friction, don't snap to run speed
-			velocity.x = move_toward(velocity.x, target, cur_fric * momentum_bleed * delta)
+			velocity.x = move_toward(velocity.x, target, cur_friction * momentum_bleed * delta)
 		else:
-			velocity.x = move_toward(velocity.x, target, acceleration * delta)
+			# !!!! BUG CHECK ALTERNATIVE SO THAT I CAN HAVE A LOT OF DIFFERENT SURFACES
+			var cur_accel := acceleration if cur_friction == friction else acceleration * ice_acceleration_mult
+			velocity.x = move_toward(velocity.x, target, cur_friction * cur_accel * delta)
 	else:
-		velocity.x = move_toward(velocity.x, 0.0, cur_fric * delta)
+		velocity.x = move_toward(velocity.x, 0.0, cur_friction * delta)
 
 	if not is_on_floor():               _to(PlayerState.FALL);   return
 	if _jump_pressed():                 _to(PlayerState.JUMP);   return
@@ -342,8 +347,18 @@ func _state_sprint(delta: float, input_dir: float) -> void:
 		sprint_stamina = 0.0
 		_to(PlayerState.OFF_BALANCE)
 		return
-
-	velocity.x = move_toward(velocity.x, input_dir * speed * sprint_multiplier, acceleration * delta)
+	# !!! BUG CHECK: NO DEBERÍA CHEQUEAR IF SPEED ABOVE COMO EN _state_run
+	var target_speed := input_dir * speed * sprint_multiplier
+	var same_dir     = sign(velocity.x) == sign(input_dir)
+	var is_above_speed = same_dir and absf(velocity.x) > (speed * sprint_multiplier)
+	var cur_friction := _get_friction()
+	if is_above_speed:
+		# ¡Lleva inercia de un tobogán o trampolín! Frenamos suavemente
+		velocity.x = move_toward(velocity.x, target_speed, cur_friction * momentum_bleed * delta)
+	else:
+		# Aceleración de sprint normal (con la penalización de hielo si aplica)
+		var cur_accel := acceleration if cur_friction == friction else acceleration * ice_acceleration_mult
+		velocity.x = move_toward(velocity.x, target_speed, cur_accel * delta)
 
 	if not is_on_floor():                                          _to(PlayerState.FALL);   return
 	if _jump_pressed():                                            _to(PlayerState.JUMP);   return
@@ -354,6 +369,7 @@ func _state_sprint(delta: float, input_dir: float) -> void:
 
 func _state_off_balance(delta: float, input_dir: float) -> void:
 	# Stumbling — heavily reduced control, rotation.x wobble handled in _update_visuals
+	var cur_friction = _get_friction()
 	velocity.x = move_toward(velocity.x, input_dir * speed * off_balance_control, friction * 0.4 * delta)
 
 	if not is_on_floor(): _to(PlayerState.FALL);        return
@@ -392,7 +408,8 @@ func _state_fall(delta: float, input_dir: float) -> void:
 
 func _state_crouch(delta: float, input_dir: float) -> void:
 	# Slow crouch-walk — tunable via crouch_speed_mult in the Inspector
-	velocity.x = move_toward(velocity.x, input_dir * speed * crouch_speed_mult, friction * delta)
+	var cur_friction := _get_friction()
+	velocity.x = move_toward(velocity.x, input_dir * speed * crouch_speed_mult, cur_friction * delta)
 
 	if not is_on_floor():                    _to(PlayerState.FALL);   return
 	if _jump_pressed():                      _to(PlayerState.JUMP);   return
