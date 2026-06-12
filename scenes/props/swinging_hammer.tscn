@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://b5v8b8swmmj2d"]
+[gd_scene load_steps=9 format=3]
 
-[ext_resource type="Script" uid="uid://b6kbhutacvcms" path="res://scripts/swinging_hammer.gd" id="1_hammer"]
+[ext_resource type="Script" path="res://scripts/swinging_hammer.gd" id="1_hammer"]
 
 [sub_resource type="StandardMaterial3D" id="mat_arm"]
 albedo_color = Color(0.45, 0.32, 0.2, 1)
@@ -12,6 +12,9 @@ size = Vector3(0.3, 4, 0.3)
 [sub_resource type="BoxShape3D" id="shape_arm"]
 size = Vector3(0.3, 4, 0.3)
 
+[sub_resource type="BoxShape3D" id="shape_arm_hit"]
+size = Vector3(0.5, 4.2, 0.5)
+
 [sub_resource type="StandardMaterial3D" id="mat_head"]
 albedo_color = Color(0.85, 0.2, 0.2, 1)
 
@@ -22,28 +25,38 @@ size = Vector3(1.4, 1.4, 1.4)
 [sub_resource type="BoxShape3D" id="shape_hit"]
 size = Vector3(1.5, 1.5, 1.5)
 
-[node name="SwingingHammer" type="Node3D" unique_id=1785163408 node_paths=PackedStringArray("hitbox")]
+[node name="SwingingHammer" type="Node3D" node_paths=PackedStringArray("hitbox", "arm_hitbox")]
 script = ExtResource("1_hammer")
 hitbox = NodePath("Pivot/Head/HitBox")
+arm_hitbox = NodePath("Pivot/ArmHitBox")
 
-[node name="Pivot" type="AnimatableBody3D" parent="." unique_id=1403576141]
+[node name="Pivot" type="AnimatableBody3D" parent="."]
+collision_layer = 1
 collision_mask = 0
 
-[node name="ArmMesh" type="MeshInstance3D" parent="Pivot" unique_id=1029558035]
+[node name="ArmMesh" type="MeshInstance3D" parent="Pivot"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 0)
 mesh = SubResource("mesh_arm")
 
-[node name="ArmCollision" type="CollisionShape3D" parent="Pivot" unique_id=2026585487]
+[node name="ArmCollision" type="CollisionShape3D" parent="Pivot"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 0)
 shape = SubResource("shape_arm")
 
-[node name="Head" type="MeshInstance3D" parent="Pivot" unique_id=1963890847]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.7, 0)
-mesh = SubResource("mesh_head")
-
-[node name="HitBox" type="Area3D" parent="Pivot/Head" unique_id=141153993]
+[node name="ArmHitBox" type="Area3D" parent="Pivot"]
 collision_layer = 0
 collision_mask = 2
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Pivot/Head/HitBox" unique_id=1441552122]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Pivot/ArmHitBox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 0)
+shape = SubResource("shape_arm_hit")
+
+[node name="Head" type="MeshInstance3D" parent="Pivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.7, 0)
+mesh = SubResource("mesh_head")
+
+[node name="HitBox" type="Area3D" parent="Pivot/Head"]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Pivot/Head/HitBox"]
 shape = SubResource("shape_hit")

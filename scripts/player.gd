@@ -27,6 +27,7 @@ enum PlayerState {
 	FALL,
 	CROUCH,
 	SLIDE,
+	STUNNED,  ## Hit reaction — all controls locked until the stun timer ends
 	# WALL_JUMP reserved — implemented as a direct velocity kick in JUMP/FALL
 }
 
@@ -87,6 +88,8 @@ enum PlayerState {
 @export var off_balance_duration: float  = 1.2
 ## Fraction of normal horizontal control during the stumble (0.0 – 1.0).
 @export var off_balance_control: float   = 0.3
+## Controls-locked duration after being hit by a hazard (hammer, projectile…).
+@export var stun_duration: float         = 0.8
 
 
 # ── Crouch & Slide ────────────────────────────────────────────────────────────
@@ -159,7 +162,7 @@ var _idle_timer: float        = 0.0  # Time spent standing in IDLE — drives th
 var _wall_coyote_timer: float    = 0.0
 var _wall_coyote_normal_x: float = 0.0  # Wall normal sign captured for the coyote window
 var _last_wall_jump_dir: float   = 0.0  # Normal sign of the last wall jumped — blocks same-wall re-jumps
-var _stumble_on_land: bool       = false  # Set by apply_hit: play OFF_BALANCE on touchdown
+var _stun_timer: float           = 0.0  # Controls locked while > 0 — set by apply_hit
 
 var sprint_stamina: float     = 0.0
 
@@ -183,6 +186,10 @@ var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 func _ready() -> void:
 	sprint_stamina = sprint_stamina_max
 	floor_snap_length = slope_snap_length  # Prevents stepping/bouncing on ramps
+	# Velocity travels ALONG the slope surface instead of horizontally + snap.
+	# Without this, fast movement on steep ramps separates the body from the
+	# floor faster than the snap can reattach it — periodic contact-loss lurches.
+	floor_constant_speed = true
 	if crouch_collision:
 		crouch_collision.disabled = true
 	# Spawn looking at the camera (yaw 180°). First input turns the cat toward
@@ -217,6 +224,7 @@ func _tick_timers(delta: float) -> void:
 	_jump_buffer_timer = maxf(_jump_buffer_timer  - delta, 0.0)
 	_off_balance_timer = maxf(_off_balance_timer  - delta, 0.0)
 	_wall_coyote_timer = maxf(_wall_coyote_timer  - delta, 0.0)
+	_stun_timer        = maxf(_stun_timer         - delta, 0.0)
 
 	if current_state == PlayerState.SLIDE:
 		_slide_timer      = maxf(_slide_timer      - delta, 0.0)
@@ -255,6 +263,7 @@ func _run_state(delta: float, input_dir: float) -> void:
 		PlayerState.FALL:        _state_fall(delta, input_dir)
 		PlayerState.CROUCH:      _state_crouch(delta, input_dir)
 		PlayerState.SLIDE:       _state_slide(delta, input_dir)
+		PlayerState.STUNNED:     _state_stunned(delta, input_dir)
 
 
 # ── Transition ────────────────────────────────────────────────────────────────
@@ -506,6 +515,28 @@ func _state_slide(delta: float, input_dir: float) -> void:
 		else: _to(PlayerState.IDLE if absf(velocity.x) < 0.5 else PlayerState.RUN)
 
 
+## Hit reaction: ALL controls locked until the stun timer expires. Gravity and
+## surface physics still apply — you can be stunned mid-air (flying the
+## knockback arc) or on ice (sliding helplessly). apply_hit refreshes the
+## timer, so consecutive hits keep the player locked.
+func _state_stunned(delta: float, _input_dir: float) -> void:
+	if is_on_floor():
+		var surface := _get_surface()
+		var cur_fric := surface.friction if surface else default_friction
+		velocity.x = move_toward(velocity.x, 0.0, cur_fric * 0.5 * delta)
+		_apply_surface_slip(delta, surface)
+
+	if _stun_timer > 0.0:
+		return
+	# Recover
+	if not is_on_floor():
+		_to(PlayerState.FALL)
+	elif absf(velocity.x) > 0.5:
+		_to(PlayerState.RUN)
+	else:
+		_to(PlayerState.IDLE)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ── Shared Helpers ────────────────────────────────────────────────────────────
 # ─────────────────────────────────────────────────────────────────────────────
@@ -534,14 +565,8 @@ func _land() -> void:
 	_visual_scale_target = squash_on_land
 	landed.emit()
 	_last_wall_jump_dir = 0.0  # Touching the floor re-arms every wall
-	# A pending hit-stagger beats everything: landing from a knockback arc
-	# plays the stumble and eats any buffered jump — no instant recovery.
-	if _stumble_on_land:
-		_stumble_on_land   = false
-		_jump_buffer_timer = 0.0
-		_to(PlayerState.OFF_BALANCE)
 	# Buffered jump fires immediately on touch-down
-	elif _jump_buffer_timer > 0.0:
+	if _jump_buffer_timer > 0.0:
 		_to(PlayerState.JUMP)
 	elif Input.is_action_pressed("crouch") and absf(velocity.x) > slide_end_speed:
 		_to(PlayerState.SLIDE)  # Land-slide: convert air momentum into a ground slide
@@ -565,15 +590,13 @@ func _jump_pressed() -> bool:
 ## State exit cleanup runs automatically — a hit during a slide restores the
 ## standing collision shape, a hit mid-air-crouch resets it, etc.
 func apply_hit(knockback: Vector2) -> void:
+	# Velocity is SET, not added — every hit produces the exact same launch
+	# regardless of how fast the player was moving when it landed.
 	velocity.x = knockback.x
 	velocity.y = knockback.y
+	_stun_timer = stun_duration  # Re-hits refresh the lock
 	took_damage.emit()
-	if is_on_floor() and knockback.y <= 0.0:
-		_to(PlayerState.OFF_BALANCE)
-	else:
-		# Launched: fly the knockback arc in FALL, then stumble on touchdown
-		_stumble_on_land = true
-		_to(PlayerState.FALL)
+	_to(PlayerState.STUNNED)
 
 
 ## Reads crouch input while airborne and toggles the crouched collision shape.
@@ -647,7 +670,6 @@ func _try_wall_jump() -> void:
 	velocity.x           = wall_nx * wall_jump_force.x
 	velocity.y           = wall_jump_force.y
 	_last_wall_jump_dir  = wall_nx
-	_stumble_on_land     = false  # Wall-jumping out of a knockback arc = clean recovery
 	_wall_coyote_timer   = 0.0
 	_coyote_timer        = 0.0
 	_jump_buffer_timer   = 0.0
@@ -669,7 +691,7 @@ func _get_surface() -> SurfaceData:
 	var space := get_world_3d().direct_space_state
 	var ray := PhysicsRayQueryParameters3D.create(
 		global_position,
-		global_position + Vector3.DOWN * (stand_half_height + slope_snap_length + 0.25),
+		global_position + Vector3.DOWN * (stand_half_height + slope_snap_length + 0.9),
 		collision_mask,
 		[get_rid()]  # Never hit our own capsule
 	)
@@ -740,7 +762,7 @@ func _update_visuals(delta: float, input_dir: float) -> void:
 	# ── Facing rotation ───────────────────────────────────────────────────────
 	# Runs every frame — not only while input is held — so turns always finish
 	# after the key is released, and the idle glance can play with no input at all.
-	if current_state != PlayerState.OFF_BALANCE:
+	if current_state != PlayerState.OFF_BALANCE and current_state != PlayerState.STUNNED:
 		# Travel facing: Right = 270° (3π/2) | Left = 90° (π/2)
 		var target_rot := 3.0 * PI / 2.0 if _last_input_dir > 0.0 else PI / 2.0
 		# Idle glance: after a short pause standing still, look at the camera (180°)
@@ -763,6 +785,9 @@ func _update_visuals(delta: float, input_dir: float) -> void:
 	if current_state == PlayerState.OFF_BALANCE:
 		# rotation.x tilts in the screen XY plane (world Z-axis) — visible side sway.
 		visual_container.rotation.x = sin(Time.get_ticks_msec() * 0.012) * 0.18
+	elif current_state == PlayerState.STUNNED:
+		# Bigger, faster KO shake — reads as "knocked out" rather than "tired"
+		visual_container.rotation.x = sin(Time.get_ticks_msec() * 0.02) * 0.35
 	elif current_state == PlayerState.SPRINT:
 		# Lean forward in the direction of travel using rotation.x.
 		# For a −Z-facing model after the yaw above, local X = world ±Z, so

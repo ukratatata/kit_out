@@ -10,10 +10,16 @@
 #   changes made ON the body — parent-driven motion desyncs it (the collision
 #   and its child mesh lag behind). Rotating the body itself is the canonical
 #   moving-platform pattern and keeps the push velocity-aware.
-# • The body's collision shape is the ARM box only: the handle can't be
-#   crossed and physically shoves the player when sweeping.
-# • Head (HitBox): pass-through Area3D — touching it deals the hit:
-#   knockback away from the head + a stumble when the player lands.
+# • The handle is BOTH solid (the body's collision blocks the player) AND a
+#   hit zone (ArmHitBox Area3D) — touching any part of the hammer stuns.
+# • Head (HitBox): pass-through Area3D damage zone.
+#
+# HIT RULES:
+# • Knockback is identical on every hit: the player's velocity is SET to the
+#   knockback vector (see player.apply_hit), so prior momentum is irrelevant.
+# • Direction is away from the hammer's anchor X — stable and predictable,
+#   not dependent on where the swinging head happens to be.
+# • Every hit stuns: controls locked for the player's stun_duration.
 #
 # DESIGN NOTES:
 # • phase_offset is the level-design superpower: place 3 hammers in a row
@@ -21,8 +27,6 @@
 #   between them becomes the player's path. Synced hammers (all 0.0) are boring.
 # • The sin() pendulum slows naturally at the arc ends like a real swing,
 #   so the safe moment to pass is when a hammer hovers at its extreme.
-# • Knockback always pushes AWAY from the head, so a hammer can never drag
-#   the player along with it.
 
 class_name SwingingHammer
 extends Node3D
@@ -34,13 +38,15 @@ extends Node3D
 @export var swing_period: float = 2.4
 ## Cycle offset (0–1). Stagger multiple hammers so they never sync up.
 @export_range(0.0, 1.0, 0.05) var phase_offset: float = 0.0
-## Knockback applied on hit: x = push away from the head, y = upward pop.
-## Kept modest — the real punishment is the stumble on landing.
+## Knockback applied on hit: x = push away from the anchor, y = upward pop.
+## Always identical — the player's velocity is set, not added to.
 @export var knockback: Vector2 = Vector2(12.0, 5.0)
 ## Seconds of immunity from THIS hammer after it lands a hit.
 @export var hit_cooldown: float = 0.6
 ## The Area3D on the hammer head that detects the player (mask = Player layer).
 @export var hitbox: Area3D
+## The Area3D along the handle — touching the handle also stuns.
+@export var arm_hitbox: Area3D
 
 @onready var _pivot: Node3D = $Pivot
 
@@ -62,20 +68,24 @@ func _physics_process(delta: float) -> void:
 
 	# Overlap polling instead of body_entered: a player standing in the
 	# hammer's path keeps getting hit each time the cooldown expires, and a
-	# sweeping head catches players reliably even at high relative speed.
-	if _cooldown > 0.0 or hitbox == null:
+	# sweeping hammer catches players reliably even at high relative speed.
+	if _cooldown > 0.0:
 		return
-	for body in hitbox.get_overlapping_bodies():
-		var player := body as KitOutPlayer
-		if player:
-			_hit(player)
-			break
+	for box in [hitbox, arm_hitbox]:
+		if box == null:
+			continue
+		for body in box.get_overlapping_bodies():
+			var player := body as KitOutPlayer
+			if player:
+				_hit(player)
+				return
 
 
 func _hit(player: KitOutPlayer) -> void:
 	_cooldown = hit_cooldown
-	# Push away from the head's current position — never drag the player along
-	var dir := signf(player.global_position.x - hitbox.global_position.x)
+	# Push away from the hammer's ANCHOR x — deterministic, the same on every
+	# hit from a given side, regardless of where the head is in its swing
+	var dir := signf(player.global_position.x - global_position.x)
 	if dir == 0.0:
 		dir = 1.0
 	player.apply_hit(Vector2(dir * knockback.x, knockback.y))

@@ -298,8 +298,8 @@ collision_mask = 2
 size = Vector3(100, 1, 4)
 material = SubResource("StandardMaterial3D_fr1um")
 
-[node name="SwingingHammer" parent="World" unique_id=1840815869 instance=ExtResource("8_hfwtw")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.416216, 6.000229, 0)
+[node name="SwingingHammer" parent="World/floor" unique_id=1168731471 instance=ExtResource("8_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.876311, 5.601387, 0)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1908956664 node_paths=PackedStringArray("player")]
 script = ExtResource("4_v45ci")
