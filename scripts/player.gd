@@ -61,8 +61,13 @@ enum PlayerState {
 @export var coyote_time: float       = 0.13
 ## Time window (seconds) before landing where a jump press is remembered.
 @export var jump_buffer_time: float  = 0.12
+@export_group("Wall Jump")
 ## Wall-jump push: x = horizontal force away from wall, y = vertical force.
 @export var wall_jump_force: Vector2 = Vector2(14.0, 18.0)
+## Grace window (seconds) after leaving a jumpable wall where a wall jump still fires.
+@export var wall_coyote_time: float = 0.15
+## Maximum fall speed while pressing into a jumpable wall — the sticky wall slide.
+@export var wall_slide_speed: float = 4.0
 
 
 # ── Sprint & Balance ──────────────────────────────────────────────────────────
@@ -145,6 +150,9 @@ var _off_balance_timer: float = 0.0
 var _slide_timer: float       = 0.0
 var _slide_lock_timer: float  = 0.0  # Crouch-release locked for this long after slide entry
 var _idle_timer: float        = 0.0  # Time spent standing in IDLE — drives the camera glance
+var _wall_coyote_timer: float    = 0.0
+var _wall_coyote_normal_x: float = 0.0  # Wall normal sign captured for the coyote window
+var _last_wall_jump_dir: float   = 0.0  # Normal sign of the last wall jumped — blocks same-wall re-jumps
 
 var sprint_stamina: float     = 0.0
 
@@ -201,6 +209,7 @@ func _tick_timers(delta: float) -> void:
 	_coyote_timer      = maxf(_coyote_timer      - delta, 0.0)
 	_jump_buffer_timer = maxf(_jump_buffer_timer  - delta, 0.0)
 	_off_balance_timer = maxf(_off_balance_timer  - delta, 0.0)
+	_wall_coyote_timer = maxf(_wall_coyote_timer  - delta, 0.0)
 
 	if current_state == PlayerState.SLIDE:
 		_slide_timer      = maxf(_slide_timer      - delta, 0.0)
@@ -356,6 +365,7 @@ func _state_off_balance(delta: float, input_dir: float) -> void:
 func _state_jump(delta: float, input_dir: float) -> void:
 	_air_move(delta, input_dir)
 	_handle_air_crouch()
+	_handle_wall_contact(input_dir)
 
 	if is_on_floor(): _land(); return
 	if velocity.y <= 0.0: _to(PlayerState.FALL); return
@@ -367,6 +377,7 @@ func _state_jump(delta: float, input_dir: float) -> void:
 
 func _state_fall(delta: float, input_dir: float) -> void:
 	_handle_air_crouch()
+	_handle_wall_contact(input_dir)
 
 	if Input.is_action_just_pressed("jump"):
 		if _coyote_timer > 0.0:
@@ -472,6 +483,7 @@ func _air_move(delta: float, input_dir: float) -> void:
 func _land() -> void:
 	_visual_scale_target = squash_on_land
 	landed.emit()
+	_last_wall_jump_dir = 0.0  # Touching the floor re-arms every wall
 	# Buffered jump fires immediately on touch-down
 	if _jump_buffer_timer > 0.0:
 		_to(PlayerState.JUMP)
@@ -507,22 +519,63 @@ func _handle_air_crouch() -> void:
 		_visual_scale_target = Vector3.ONE
 
 
-func _try_wall_jump() -> void:
+## Returns the X sign of the normal of a jumpable wall the player is touching,
+## or 0.0 if not touching one. Scans all contacts — robust against simultaneous
+## floor + wall contact.
+func _touching_jumpable_wall_normal_x() -> float:
 	if not is_on_wall():
+		return 0.0
+	for i in get_slide_collision_count():
+		var col := get_slide_collision(i)
+		var n := col.get_normal()
+		if absf(n.y) > 0.5:
+			continue  # Floor or ceiling contact — not a wall
+		var body := col.get_collider()
+		if body and body.is_in_group("wall_jumpable"):
+			return signf(n.x)
+	return 0.0
+
+
+## Called every airborne frame. Refreshes the wall-coyote window and applies
+## the sticky wall slide while the player presses into a jumpable wall.
+func _handle_wall_contact(input_dir: float) -> void:
+	var wall_nx := _touching_jumpable_wall_normal_x()
+	if wall_nx == 0.0:
 		return
-	var col := get_last_slide_collision()
-	if not col:
+
+	# Any contact refreshes the coyote window — a jump press shortly after
+	# leaving the wall still counts
+	_wall_coyote_timer    = wall_coyote_time
+	_wall_coyote_normal_x = wall_nx
+
+	# Sticky slide: pressing INTO the wall (input opposes the normal) caps
+	# fall speed, giving time to aim the jump
+	if input_dir * wall_nx < -0.1 and velocity.y < -wall_slide_speed:
+		velocity.y = -wall_slide_speed
+
+
+func _try_wall_jump() -> void:
+	# Accept direct contact, or recent contact within the wall-coyote window
+	var wall_nx := _touching_jumpable_wall_normal_x()
+	if wall_nx == 0.0 and _wall_coyote_timer > 0.0:
+		wall_nx = _wall_coyote_normal_x
+	if wall_nx == 0.0:
 		return
-	var wall_body := col.get_collider()
-	if not wall_body or not wall_body.is_in_group("wall_jumpable"):
+
+	# One jump per wall: the wall you just jumped from is spent until you touch
+	# the floor or jump off a wall facing the other way. Ping-ponging between
+	# two opposing walls works; pogo-climbing a single wall does not.
+	if wall_nx == _last_wall_jump_dir:
 		return
+
 	# Push away from wall and upward — direct velocity set bypasses the normal
 	# transition system since we want to stay in the JUMP state
-	var wall_normal := col.get_normal()
-	velocity.x          = wall_normal.x * wall_jump_force.x
-	velocity.y          = wall_jump_force.y
-	_coyote_timer       = 0.0
-	_jump_buffer_timer  = 0.0
+	velocity.x           = wall_nx * wall_jump_force.x
+	velocity.y           = wall_jump_force.y
+	_last_wall_jump_dir  = wall_nx
+	_wall_coyote_timer   = 0.0
+	_coyote_timer        = 0.0
+	_jump_buffer_timer   = 0.0
 	_visual_scale_target = squash_on_jump
 	if current_state != PlayerState.JUMP:
 		current_state = PlayerState.JUMP

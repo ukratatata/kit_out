@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://csmm35e3mm1xp" path="res://scripts/camera_follow.gd" id="3_fr1um"]
 [ext_resource type="Texture2D" uid="uid://qgk1pgd74ju7" path="res://addons/kenney_prototype_textures/orange/texture_13.png" id="4_48ne7"]
 [ext_resource type="Script" uid="uid://dc6x5bd1ttk1i" path="res://scripts/debug_hud.gd" id="4_v45ci"]
+[ext_resource type="Texture2D" uid="uid://cq6ir48vkrjb0" path="res://addons/kenney_prototype_textures/light/texture_08.png" id="5_6xh4u"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_yautc"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -35,12 +36,19 @@ uv1_world_triplanar = true
 material = SubResource("StandardMaterial3D_6xh4u")
 size = Vector3(400, 40, 1)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cyt5c"]
+albedo_color = Color(0.5529412, 0.8784314, 1, 1)
+albedo_texture = ExtResource("5_6xh4u")
+uv1_triplanar = true
+uv1_world_triplanar = true
+
 [node name="TestLevel" type="Node3D" unique_id=1679223160]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=581594941]
 environment = SubResource("Environment_v45ci")
 
 [node name="Player" parent="." unique_id=1912640473 instance=ExtResource("1_jbqir")]
+ice_friction = 0.1
 slide_friction = 10.0
 sprint_lean_base = 0.1
 sprint_lean_max = 0.5
@@ -115,7 +123,7 @@ mesh = SubResource("BoxMesh_fr1um")
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -8, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="Floor6" type="CSGBox3D" parent="World/floor" unique_id=779310866]
+[node name="Floor6" type="CSGBox3D" parent="World/floor" unique_id=779310866 groups=["wall_jumpable"]]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 72.87188, 36.29719, 0)
 use_collision = true
 collision_mask = 2
@@ -176,7 +184,7 @@ mesh = SubResource("BoxMesh_fr1um")
 transform = Transform3D(2.6021862, 0, 0, 0, 2.8582284, 0, 0, 0, 1, -8, 1.422, -2.622)
 mesh = SubResource("BoxMesh_fr1um")
 
-[node name="Floor7" type="CSGBox3D" parent="World/floor" unique_id=485105571]
+[node name="Floor7" type="CSGBox3D" parent="World/floor" unique_id=485105571 groups=["wall_jumpable"]]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 79.59624, 36.29719, 0)
 use_collision = true
 collision_mask = 2
@@ -247,6 +255,13 @@ use_collision = true
 collision_mask = 2
 size = Vector3(100, 1, 4)
 material = SubResource("StandardMaterial3D_fr1um")
+
+[node name="ice" type="CSGBox3D" parent="World/floor" unique_id=1674787898 groups=["ice_surface"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 135.40768, -12.275404, 0)
+use_collision = true
+collision_mask = 2
+size = Vector3(100, 1, 4)
+material = SubResource("StandardMaterial3D_cyt5c")
 
 [node name="Floor3" type="CSGBox3D" parent="World/floor" unique_id=192598118]
 transform = Transform3D(0.9704812, 0.2411767, 0, -0.2411767, 0.9704812, 0, 0, 0, 1, 153.02061, -30.580246, 1.9073486e-06)

@@ -23,6 +23,11 @@ window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 
+[global_group]
+
+wall_jumpable="Walls that the player can use for walljumping"
+ice_surface="Slippery surfaces with low friction"
+
 [input]
 
 ui_accept={
