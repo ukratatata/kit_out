@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/projectile_shooter.gd" id="1_shooter"]
+[ext_resource type="PackedScene" path="res://scenes/props/projectile.tscn" id="2_proj"]
+
+[sub_resource type="StandardMaterial3D" id="mat_barrel"]
+albedo_color = Color(0.25, 0.25, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="mesh_barrel"]
+material = SubResource("mat_barrel")
+size = Vector3(1.2, 1.2, 1.2)
+
+
+[node name="ProjectileShooter" type="Node3D" node_paths=PackedStringArray("muzzle")]
+script = ExtResource("1_shooter")
+projectile_scene = ExtResource("2_proj")
+muzzle = NodePath("Barrel")
+
+
+[node name="Barrel" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh_barrel")

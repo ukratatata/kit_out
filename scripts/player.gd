@@ -134,6 +134,11 @@ enum PlayerState {
 ## Friction multiplier when running while above normal run speed (post-slide bleed).
 ## Lower = momentum fades more slowly back to run speed.
 @export_range(0.0, 1.0, 0.05) var momentum_bleed: float = 0.35
+## Extra downward acceleration while crouching in the air (dive-bomb).
+## Added on top of gravity, so holding crouch mid-air drops you fast.
+@export var dive_gravity_bonus: float = 3.0
+## Downward speed cap while dive-bombing, so the drop stays controllable.
+@export var dive_max_speed: float     = 45.0
 
 
 # ── Runtime ───────────────────────────────────────────────────────────────────
@@ -268,6 +273,11 @@ func _apply_gravity(delta: float) -> void:
 		return
 	var scale := gravity_multiplier * (fall_gravity_bonus if velocity.y < 0.0 else 1.0)
 	velocity.y -= _gravity * scale * delta
+	# Dive-bomb: holding crouch in the air piles on extra downward acceleration,
+	# letting the player drop fast to slam through a gap or beat a closing hazard.
+	if _air_crouch and velocity.y > -dive_max_speed:
+		velocity.y -= _gravity * dive_gravity_bonus * delta
+		velocity.y = maxf(velocity.y, -dive_max_speed)
 
 
 # ── State Dispatcher ──────────────────────────────────────────────────────────
@@ -631,10 +641,10 @@ func _nearby_jumpable_wall_normal_x() -> float:
 	for ray in [_wall_ray_right, _wall_ray_left]:
 		if not ray.is_colliding():
 			continue
-		var n := ray.get_collision_normal()
+		var n: Vector3 = ray.get_collision_normal()
 		if absf(n.y) >= 0.5:
 			continue  # Floor or steep slope — not a wall
-		var body := ray.get_collider()
+		var body: Object = ray.get_collider()
 		if body and body.is_in_group("wall_jumpable"):
 			return signf(n.x)
 	return 0.0
@@ -750,4 +760,24 @@ func bounce(force: float, horizontal_keep: float = 1.0) -> void:
 		_visual_base_scale   = Vector3.ONE
 	current_state = PlayerState.JUMP
 	_visual_scale_target = visuals.squash_on_jump
+	state_changed.emit(current_state)
+
+
+## Public respawn interface for KillZone (and anything that needs to reset the
+## player to a safe point). Teleports, zeroes all motion, re-locks the Z plane,
+## clears air/hit state, and drops into FALL so the cat settles onto the ground.
+func respawn_at(world_pos: Vector3) -> void:
+	global_position = world_pos
+	velocity = Vector3.ZERO
+	axis_lock_linear_z = true
+	_set_crouch(false)
+	_air_crouch = false
+	_visual_base_scale   = Vector3.ONE
+	_visual_scale_target = Vector3.ONE
+	_coyote_timer = 0.0
+	_jump_buffer_timer = 0.0
+	_same_wall_cooldown_timer = 0.0
+	_last_wall_jump_dir = 0.0
+	sprint_stamina = sprint_stamina_max
+	current_state = PlayerState.FALL
 	state_changed.emit(current_state)

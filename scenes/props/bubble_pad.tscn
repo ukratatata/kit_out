@@ -1,0 +1,39 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/bubble_pad.gd" id="1_bubble"]
+
+[sub_resource type="StandardMaterial3D" id="mat_bubble"]
+albedo_color = Color(0.4, 0.75, 0.95, 0.55)
+emission_enabled = true
+emission = Color(0.3, 0.6, 0.9, 1)
+emission_energy_multiplier = 0.4
+transparency = 1
+
+[sub_resource type="SphereMesh" id="mesh_bubble"]
+material = SubResource("mat_bubble")
+radius = 1.1
+height = 2.2
+
+[sub_resource type="SphereShape3D" id="shape_bounce"]
+radius = 1.2
+
+
+[node name="BubblePad" type="Node3D" node_paths=PackedStringArray("bounce_zone")]
+script = ExtResource("1_bubble")
+bounce_zone = NodePath("BounceZone")
+
+
+[node name="Visual" type="Node3D" parent="."]
+
+
+[node name="BubbleMesh" type="MeshInstance3D" parent="Visual"]
+mesh = SubResource("mesh_bubble")
+
+
+[node name="BounceZone" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask  = 2
+
+
+[node name="BounceShape" type="CollisionShape3D" parent="BounceZone"]
+shape = SubResource("shape_bounce")

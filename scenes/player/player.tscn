@@ -7,12 +7,29 @@
 [ext_resource type="PackedScene" uid="uid://d3orkhmvd6rxi" path="res://assets/cartoon_cat.glb" id="6_75vfm"]
 [ext_resource type="Resource" path="res://resources/ice_surface.tres" id="6_qek5x"]
 [ext_resource type="Script" uid="uid://b4vb5d1l5x4rp" path="res://scenes/player/hazard_handler.gd" id="7_5gtgg"]
+[ext_resource type="Script" path="res://scenes/player/land_dust.gd" id="8_dust"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_sh265"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_lvxji"]
 radius = 0.45
 height = 0.9
+
+[sub_resource type="ParticleProcessMaterial" id="ppm_dust"]
+direction = Vector3(0, 1, 0)
+spread = 75.0
+initial_velocity_min = 1.5
+initial_velocity_max = 3.5
+gravity = Vector3(0, -6, 0)
+scale_min = 0.3
+scale_max = 0.7
+color = Color(0.82, 0.78, 0.68, 0.7)
+
+[sub_resource type="SphereMesh" id="mesh_dust"]
+radius = 0.12
+height = 0.24
+radial_segments = 6
+rings = 3
 
 [node name="Player" type="CharacterBody3D" unique_id=1912640473 node_paths=PackedStringArray("crouch_collision")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -55,3 +72,14 @@ collision_mask = 1
 [node name="WallRayRight" type="RayCast3D" parent="." unique_id=1245720253]
 target_position = Vector3(0.8, 0, 0)
 collision_mask = 1
+
+[node name="LandDust" type="GPUParticles3D" parent="." unique_id=771122830]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+emitting = false
+amount = 18
+lifetime = 0.6
+one_shot = true
+explosiveness = 0.9
+process_material = SubResource("ppm_dust")
+draw_pass_1 = SubResource("mesh_dust")
+script = ExtResource("8_dust")

@@ -47,21 +47,37 @@ Last synced with implementation: June 2026
 
 - TODO: flip the lead offset when running left; separate ahead/behind clamp distances.
 
-> Obstacles & Interactions (PHASE 3 — NEXT UP):
+> Obstacles & Interactions (PHASE 3 — IN PROGRESS):
 
-- Swinging hammers (first to build)
-- Skipping Rope-style hammers
-- Collapsing platforms
-- Trampolines
-- Slippery ice sections (player-side support done)
-- Ropes (swinging/climbing)
-- Projectiles/Shooting obstacles to dodge
-- Bubble-style jumping pads (disappear after one use for a couple of seconds)
-- Wall jumping surfaces (player-side support done)
-- Crouching through low gaps (done, works mid-jump)
+- Swinging hammers — DONE (solid handle + head, both deal a stun hit, phase_offset for waves)
+- Spinning bars — DONE (vertical paddle rotating on X, knocks the player OFF the track in Z)
+- Collapsing platforms — DONE (trapdoor: rattle warning, hinges open downward, respawns)
+- Trampolines — DONE (fall-proportional bounce, centre-of-pad bonus, cannot stand on)
+- Slippery ice sections — DONE (SurfaceData system; ice friction 8, slope-slip pull)
+- Wall jumping surfaces — DONE (proximity raycast detection, same-wall half-height penalty)
+- Crouching through low gaps — DONE (works mid-jump)
+- Skipping Rope-style hammers — NOT STARTED (variant of hammer: full 360 rotation)
+- Ropes (swinging/climbing) — NOT STARTED
+- Projectiles/Shooting obstacles — NOT STARTED
+- Bubble-style jumping pads — NOT STARTED (one-use disappearing pad)
+
+> Systems (built alongside Phase 3):
+
+- Surface system: data-driven SurfaceData resources (.tres), matched by node group.
+  Each defines friction, acceleration mult, max-speed mult, and slope-slip.
+- Hit/stun system: HazardHandler component. apply_hit (2D) / apply_hit_3d (off-track).
+  Identical knockback (velocity set, not added), stun lock, i-frames with blink.
+- Checkpoint system: reusable checkpoint.tscn + GameState autoload. Self-orders by
+  X position, survives scene reloads.
+- Kill zone: reusable kill_zone.tscn. Falling respawns at last checkpoint (or
+  restarts if none reached).
+- Pause menu: Esc/P. Resume / Restart Level (clears checkpoints) / From Checkpoint.
+- Player composition: split into VisualsController, SurfaceDetector, HazardHandler
+  child components.
 
 > Open decisions:
 
 - Multiplayer: time attack ships first (race timer + best times, Phase 5);
   local split-screen considered for a later version.
 - Win/loss structure, level count, and progression: to define during Phase 4-5.
+- Start line / finish line / race timer: NOT YET BUILT (Phase 4-5).

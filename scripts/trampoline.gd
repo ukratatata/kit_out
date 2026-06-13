@@ -24,13 +24,14 @@ extends Node3D
 
 
 ## Minimum upward launch, used for a gentle landing.
-@export var min_bounce: float        = 18.0
-## Incoming fall speed converted back into upward speed.
-@export var bounce_multiplier: float = 1.1
+@export var min_bounce: float        = 14.0
+## Incoming fall speed converted back into upward speed. <1.0 = each free bounce
+## loses height (settles); 1.0 = perfect rebound; >1.0 = ramps higher.
+@export var bounce_multiplier: float = 0.8
 ## Extra launch velocity for a dead-centre hit, fading to 0 at the pad edges.
-@export var centre_bonus: float      = 12.0
+@export var centre_bonus: float      = 6.0
 ## Hard ceiling so a huge fall can't fling the player offscreen.
-@export var max_bounce: float        = 75.0
+@export var max_bounce: float        = 42.0
 ## Fraction of horizontal speed kept through the bounce (0 = vertical, 1 = all).
 @export_range(0.0, 1.0, 0.05) var horizontal_keep: float = 1.0
 ## Minimum seconds between launches — stops double-triggering on one contact.

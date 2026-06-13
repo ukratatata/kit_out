@@ -26,10 +26,16 @@ extends Camera3D
 @export_group("Framing Window (Deadzone)")
 ## Width of the invisible box where the player moves freely without moving the camera.
 @export var deadzone_width: float     = 2.0
-## Hard clamp — the camera will never let the player get further than this off-center.
+## Hard clamp ahead of the player: x = ahead distance, y = vertical limit.
 @export var max_screen_distance: Vector2 = Vector2(4.0, 3.0)
-## Shifts the camera center ahead of the player to show upcoming obstacles.
+## Hard clamp BEHIND the player horizontally. Separate from the ahead distance
+## so the camera can lead generously forward while staying tight behind.
+@export var max_distance_behind: float = 2.0
+## How far the camera leads in the direction of travel to show upcoming obstacles.
+## Flips sign automatically when running left (see _physics_process).
 @export var screen_offset_x: float   = 4.0
+## How fast the lead offset eases when you reverse direction.
+@export var offset_flip_speed: float = 3.0
 ## Camera height above the player.
 @export var height_offset: float     = 3.0
 ## Lerp speed when the player pushes the deadzone edge.
@@ -54,6 +60,9 @@ extends Camera3D
 var target_cam_pos: Vector3
 var base_rotation_x: float = 0.0
 var target_rot_y: float    = 0.0
+## Current signed lead offset. Eases between +screen_offset_x (moving right)
+## and -screen_offset_x (moving left) so the camera always leads forward.
+var _current_offset_x: float = 0.0
 
 ## Trauma value 0–1. Square it for a non-linear falloff (strong start, quick settle).
 var _trauma: float        = 0.0
@@ -65,6 +74,7 @@ var _shake_offset: Vector3 = Vector3.ZERO
 func _ready() -> void:
 	base_rotation_x = rotation.x
 	target_rot_y    = deg_to_rad(-look_side_angle)
+	_current_offset_x = screen_offset_x
 
 	if target:
 		target_cam_pos   = global_position
@@ -91,7 +101,16 @@ func _physics_process(delta: float) -> void:
 		cam_vel = Vector2(target.velocity.x, target.velocity.y)
 
 	# ── 1. Deadzone (X axis) ──────────────────────────────────────────────────
-	var ideal_center_x := target.global_position.x + screen_offset_x
+	# Lead offset flips with travel direction so the camera always shows what's
+	# ahead. Eased so reversing direction doesn't snap the framing.
+	var offset_target := screen_offset_x
+	if cam_vel.x < -0.5:
+		offset_target = -screen_offset_x
+	elif cam_vel.x <= 0.5:
+		offset_target = _current_offset_x  # Hold current lead when nearly still
+	_current_offset_x = lerp(_current_offset_x, offset_target, offset_flip_speed * delta)
+
+	var ideal_center_x := target.global_position.x + _current_offset_x
 	var dist_x         := ideal_center_x - target_cam_pos.x
 	var half_dz        := deadzone_width / 2.0
 
@@ -109,13 +128,20 @@ func _physics_process(delta: float) -> void:
 	global_position.y = lerp(global_position.y, target_cam_pos.y, follow_speed * delta)
 
 	# ── 4. Hard Clamp ─────────────────────────────────────────────────────────
-	# Horizontal limit
+	# Horizontal: ahead distance and behind distance are independent. "Ahead"
+	# follows the current lead direction, so the asymmetry flips with travel.
+	var ahead_sign := signf(_current_offset_x) if absf(_current_offset_x) > 0.01 else 1.0
+	var dist_ahead := max_screen_distance.x
+	var dist_back  := max_distance_behind
 	var actual_dist_x := ideal_center_x - global_position.x
-	if actual_dist_x > max_screen_distance.x:
-		global_position.x = ideal_center_x - max_screen_distance.x
+	# When leading right, "ahead" is the +x side; when leading left, it flips.
+	var limit_pos := dist_ahead if ahead_sign > 0.0 else dist_back
+	var limit_neg := dist_back if ahead_sign > 0.0 else dist_ahead
+	if actual_dist_x > limit_pos:
+		global_position.x = ideal_center_x - limit_pos
 		target_cam_pos.x  = global_position.x
-	elif actual_dist_x < (-max_screen_distance.x / 2.0):	# CHANGE TO POSIBLY ADJUSTING LEFT AND RIGHT DISTANCE INSTEAD OF MAGIC NUMER
-		global_position.x = ideal_center_x + (max_screen_distance.x / 2.0)
+	elif actual_dist_x < -limit_neg:
+		global_position.x = ideal_center_x + limit_neg
 		target_cam_pos.x  = global_position.x
 
 	# Vertical limit

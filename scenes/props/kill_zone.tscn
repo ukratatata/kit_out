@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/kill_zone.gd" id="1_kill"]
+
+[sub_resource type="BoxShape3D" id="shape_kill"]
+size = Vector3(600, 4, 12)
+
+
+[node name="KillZone" type="Area3D"]
+script = ExtResource("1_kill")
+
+
+[node name="KillShape" type="CollisionShape3D" parent="."]
+shape = SubResource("shape_kill")
