@@ -1,0 +1,32 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/checkpoint.gd" id="1_chk"]
+
+[sub_resource type="StandardMaterial3D" id="mat_flag"]
+albedo_color = Color(0.5, 0.5, 0.5, 1)
+
+[sub_resource type="BoxMesh" id="mesh_flag"]
+material = SubResource("mat_flag")
+size = Vector3(0.15, 3, 1.2)
+
+[sub_resource type="BoxShape3D" id="shape_trigger"]
+size = Vector3(1.5, 4, 3.6)
+
+
+[node name="Checkpoint" type="Area3D" node_paths=PackedStringArray("respawn_point")]
+script = ExtResource("1_chk")
+respawn_point = NodePath("RespawnPoint")
+
+
+[node name="FlagMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+mesh = SubResource("mesh_flag")
+
+
+[node name="TriggerShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+shape = SubResource("shape_trigger")
+
+
+[node name="RespawnPoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)

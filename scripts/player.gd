@@ -181,6 +181,10 @@ func _ready() -> void:
 	# Spawn looking at the camera (yaw 180°). First input turns the cat toward
 	# travel direction with a clean quarter-turn instead of a 3/4 spin from yaw 0.
 	visual_container.rotation.y = PI
+	# If a checkpoint is active (set before a reload), spawn there instead of the
+	# scene's default position. GameState is an autoload, so it survives reloads.
+	if GameState.has_checkpoint():
+		global_position = GameState.last_checkpoint
 
 
 func _physics_process(delta: float) -> void:

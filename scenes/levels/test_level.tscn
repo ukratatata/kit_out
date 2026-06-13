@@ -10,6 +10,8 @@
 [ext_resource type="PackedScene" path="res://scenes/props/collapsing_platform.tscn" id="8_2mu0v"]
 [ext_resource type="PackedScene" path="res://scenes/props/swinging_hammer.tscn" id="8_hfwtw"]
 [ext_resource type="PackedScene" path="res://scenes/props/trampoline.tscn" id="9_2mu0v"]
+[ext_resource type="PackedScene" path="res://scenes/props/checkpoint.tscn" id="10_eaa0b"]
+[ext_resource type="Script" uid="uid://bj3ngqr0esnsc" path="res://scripts/pause_menu.gd" id="12_a5rnb"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_yautc"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -296,57 +298,80 @@ collision_mask = 2
 size = Vector3(100, 1, 4)
 material = SubResource("StandardMaterial3D_fr1um")
 
-[node name="SwingingHammer" parent="World/floor" unique_id=1168731471 instance=ExtResource("8_hfwtw")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.876311, 5.601387, 0)
+[node name="CollapsingPlatforms" type="Node" parent="World" unique_id=774680338]
 
-[node name="SpinningBar" parent="World/floor" unique_id=1768626329 instance=ExtResource("7_hfwtw")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.875832, 3.3697252, 0)
-
-[node name="CollapsingPlatform" parent="World/floor" unique_id=228467432 instance=ExtResource("8_2mu0v")]
+[node name="CollapsingPlatform" parent="World/CollapsingPlatforms" unique_id=228467432 instance=ExtResource("8_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.305073, 4.0851707, 0)
 shake_duration = 1.0
 
-[node name="CollapsingPlatform2" parent="World/floor" unique_id=378783229 instance=ExtResource("8_2mu0v")]
+[node name="CollapsingPlatform2" parent="World/CollapsingPlatforms" unique_id=378783229 instance=ExtResource("8_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64.23001, 9.017567, 0)
 
-[node name="CollapsingPlatform3" parent="World/floor" unique_id=1592384229 instance=ExtResource("8_2mu0v")]
+[node name="CollapsingPlatform3" parent="World/CollapsingPlatforms" unique_id=1592384229 instance=ExtResource("8_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.223377, 11.528964, 0)
 shake_duration = 1.0
 
-[node name="CollapsingPlatform4" parent="World/floor" unique_id=50956043 instance=ExtResource("8_2mu0v")]
+[node name="CollapsingPlatform4" parent="World/CollapsingPlatforms" unique_id=50956043 instance=ExtResource("8_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 65.488525, 14.856929, 0)
 
-[node name="CollapsingPlatform5" parent="World/floor" unique_id=1258037707 instance=ExtResource("8_2mu0v")]
+[node name="CollapsingPlatform5" parent="World/CollapsingPlatforms" unique_id=1258037707 instance=ExtResource("8_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 66.55928, 18.786163, 0)
 
-[node name="CollapsingPlatform6" parent="World/floor" unique_id=1456672621 instance=ExtResource("8_2mu0v")]
+[node name="CollapsingPlatform6" parent="World/CollapsingPlatforms" unique_id=1456672621 instance=ExtResource("8_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 66.36761, 22.236689, 0)
 
-[node name="CollapsingPlatform7" parent="World/floor" unique_id=1067470794 instance=ExtResource("8_2mu0v")]
+[node name="CollapsingPlatform7" parent="World/CollapsingPlatforms" unique_id=1067470794 instance=ExtResource("8_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 66.13241, 26.080645, 0)
 gap_before_shake = 1.0
 
-[node name="CollapsingPlatform8" parent="World/floor" unique_id=908476929 instance=ExtResource("8_2mu0v")]
+[node name="CollapsingPlatform8" parent="World/CollapsingPlatforms" unique_id=908476929 instance=ExtResource("8_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58.256653, 29.332552, 0)
 
-[node name="SpinningBar2" parent="World/floor" unique_id=421078800 instance=ExtResource("7_hfwtw")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35.986446, 3.4209404, 0)
+[node name="Trampolines" type="Node" parent="World" unique_id=1416102250]
 
-[node name="SpinningBar3" parent="World/floor" unique_id=1312456350 instance=ExtResource("7_hfwtw")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39.9258, 3.4209404, 0)
-
-[node name="SpinningBar4" parent="World/floor" unique_id=605624250 instance=ExtResource("7_hfwtw")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.69612, 3.4209404, 0)
-
-[node name="Trampoline" parent="World/floor" unique_id=857847917 instance=ExtResource("9_2mu0v")]
+[node name="Trampoline" parent="World/Trampolines" unique_id=857847917 instance=ExtResource("9_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64.217026, -16.96091, 0)
 
-[node name="Trampoline2" parent="World/floor" unique_id=1437694942 instance=ExtResource("9_2mu0v")]
+[node name="Trampoline2" parent="World/Trampolines" unique_id=1437694942 instance=ExtResource("9_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70.39106, -7.6558647, 0)
 
-[node name="Trampoline3" parent="World/floor" unique_id=1304195694 instance=ExtResource("9_2mu0v")]
+[node name="Trampoline3" parent="World/Trampolines" unique_id=1304195694 instance=ExtResource("9_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63.35514, 1.1683273, 0)
+
+[node name="SpinningBar" type="Node" parent="World" unique_id=153272415]
+
+[node name="SpinningBar" parent="World/SpinningBar" unique_id=1768626329 instance=ExtResource("7_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.875832, 3.3697252, 0)
+
+[node name="SpinningBar2" parent="World/SpinningBar" unique_id=421078800 instance=ExtResource("7_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35.986446, 3.4209404, 0)
+
+[node name="SpinningBar3" parent="World/SpinningBar" unique_id=1312456350 instance=ExtResource("7_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39.9258, 3.4209404, 0)
+
+[node name="SpinningBar4" parent="World/SpinningBar" unique_id=605624250 instance=ExtResource("7_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.69612, 3.4209404, 0)
+
+[node name="Hammers" type="Node" parent="World" unique_id=53625371]
+
+[node name="SwingingHammer" parent="World/Hammers" unique_id=1168731471 instance=ExtResource("8_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.876311, 5.601387, 0)
+
+[node name="Checkpoint" parent="World" unique_id=1576946407 instance=ExtResource("10_eaa0b")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.228542, 0, 0)
+
+[node name="Checkpoint2" parent="World" unique_id=1037816260 instance=ExtResource("10_eaa0b")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.457386, 0, 0)
+
+[node name="Checkpoint3" parent="World" unique_id=749785619 instance=ExtResource("10_eaa0b")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58.717487, 29.415478, 0)
+
+[node name="Checkpoint4" parent="World" unique_id=857727245 instance=ExtResource("10_eaa0b")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 77.453064, -16.98443, 0)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1908956664 node_paths=PackedStringArray("player")]
 script = ExtResource("4_v45ci")
 player = NodePath("../Player")
+
+[node name="PauseMenu" type="CanvasLayer" parent="." unique_id=2127748849]
+script = ExtResource("12_a5rnb")
