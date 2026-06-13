@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/trampoline.gd" id="1_tramp"]
 
@@ -15,31 +15,13 @@ size = Vector3(4, 0.4, 3.6)
 [sub_resource type="StandardMaterial3D" id="mat_frame"]
 albedo_color = Color(0.15, 0.15, 0.18, 1)
 
-[sub_resource type="BoxMesh" id="mesh_frame"]
-material = SubResource("mat_frame")
-size = Vector3(4.4, 0.6, 4)
-
 [sub_resource type="BoxShape3D" id="shape_bounce"]
-size = Vector3(4, 1, 3.6)
+size = Vector3(4, 1.2, 3.6)
 
 
 [node name="Trampoline" type="Node3D" node_paths=PackedStringArray("bounce_zone")]
 script = ExtResource("1_tramp")
 bounce_zone = NodePath("BounceZone")
-
-
-[node name="Frame" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, 0)
-collision_layer = 1
-collision_mask  = 0
-
-
-[node name="FrameMesh" type="MeshInstance3D" parent="Frame"]
-mesh = SubResource("mesh_frame")
-
-
-[node name="FrameShape" type="CollisionShape3D" parent="Frame"]
-shape = SubResource("shape_bounce")
 
 
 [node name="Pad" type="Node3D" parent="."]

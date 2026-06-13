@@ -68,14 +68,16 @@ func _build_ui() -> void:
 	dim.color = Color(0.0, 0.0, 0.0, 0.55)
 	_panel.add_child(dim)
 
-	# Centered button column
+	# CenterContainer fills the screen and centres its single child reliably,
+	# at any viewport size — no manual offsets that can push it off-screen.
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_panel.add_child(center)
+
 	var box := VBoxContainer.new()
-	box.set_anchors_preset(Control.PRESET_CENTER)
 	box.add_theme_constant_override("separation", 14)
 	box.custom_minimum_size = Vector2(300, 0)
-	_panel.add_child(box)
-	# Offset so the box is truly centered (anchors set the pivot, not the size)
-	box.position = Vector2(-150, -90)
+	center.add_child(box)
 
 	var title := Label.new()
 	title.text = "PAUSED"

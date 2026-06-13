@@ -181,6 +181,12 @@ func _ready() -> void:
 	# Spawn looking at the camera (yaw 180°). First input turns the cat toward
 	# travel direction with a clean quarter-turn instead of a 3/4 spin from yaw 0.
 	visual_container.rotation.y = PI
+	# Proximity wall rays — target_position driven by the export so Inspector
+	# tuning of wall_check_distance updates the detection range at startup.
+	_wall_ray_left.target_position  = Vector3(-wall_check_distance, 0.0, 0.0)
+	_wall_ray_right.target_position = Vector3( wall_check_distance, 0.0, 0.0)
+	_wall_ray_left.collision_mask   = 1  # World layer
+	_wall_ray_right.collision_mask  = 1
 	# If a checkpoint is active (set before a reload), spawn there instead of the
 	# scene's default position. GameState is an autoload, so it survives reloads.
 	if GameState.has_checkpoint():
@@ -617,18 +623,18 @@ func _handle_air_crouch() -> void:
 		_visual_scale_target = Vector3.ONE
 
 
-## Returns the X sign of the normal of a jumpable wall the player is touching,
-## or 0.0 if not touching one. Scans all contacts — robust against simultaneous
-## floor + wall contact.
-func _touching_jumpable_wall_normal_x() -> float:
-	if not is_on_wall():
-		return 0.0
-	for i in get_slide_collision_count():
-		var col := get_slide_collision(i)
-		var n := col.get_normal()
-		if absf(n.y) > 0.5:
-			continue  # Floor or ceiling contact — not a wall
-		var body := col.get_collider()
+## Proximity wall detection via RayCast3D (Celeste-style). Being NEAR a
+## jumpable wall is enough — no physical contact required, which is far more
+## forgiving than reading is_on_wall(). Checks both sides; right takes priority.
+## Returns the wall normal's X sign (points away from the wall), or 0.0.
+func _nearby_jumpable_wall_normal_x() -> float:
+	for ray in [_wall_ray_right, _wall_ray_left]:
+		if not ray.is_colliding():
+			continue
+		var n := ray.get_collision_normal()
+		if absf(n.y) >= 0.5:
+			continue  # Floor or steep slope — not a wall
+		var body := ray.get_collider()
 		if body and body.is_in_group("wall_jumpable"):
 			return signf(n.x)
 	return 0.0
@@ -637,9 +643,14 @@ func _touching_jumpable_wall_normal_x() -> float:
 ## Called every airborne frame. Refreshes the wall-coyote window and applies
 ## the sticky wall slide while the player presses into a jumpable wall.
 func _handle_wall_contact(input_dir: float) -> void:
-	var wall_nx := _touching_jumpable_wall_normal_x()
+	var wall_nx := _nearby_jumpable_wall_normal_x()
 	if wall_nx == 0.0:
 		return
+
+	# Touching the OPPOSITE wall instantly clears the same-wall penalty so a
+	# chimney of two facing walls climbs at full height.
+	if _last_wall_jump_dir != 0.0 and wall_nx != _last_wall_jump_dir:
+		_same_wall_cooldown_timer = 0.0
 
 	# Any contact refreshes the coyote window — a jump press shortly after
 	# leaving the wall still counts
@@ -653,28 +664,30 @@ func _handle_wall_contact(input_dir: float) -> void:
 
 
 func _try_wall_jump() -> void:
-	# Accept direct contact, or recent contact within the wall-coyote window
-	var wall_nx := _touching_jumpable_wall_normal_x()
+	# Accept proximity detection, or recent contact within the wall-coyote window
+	var wall_nx := _nearby_jumpable_wall_normal_x()
 	if wall_nx == 0.0 and _wall_coyote_timer > 0.0:
 		wall_nx = _wall_coyote_normal_x
 	if wall_nx == 0.0:
 		return
 
-	# One jump per wall: the wall you just jumped from is spent until you touch
-	# the floor or jump off a wall facing the other way. Ping-ponging between
-	# two opposing walls works; pogo-climbing a single wall does not.
-	if wall_nx == _last_wall_jump_dir:
-		return
+	# Same-wall penalty (NOT a hard block): jumping the same wall again within
+	# the cooldown window gives a reduced vertical boost. Pogo-climbing one wall
+	# is punished; ping-ponging two opposing walls stays full-height because
+	# touching the other wall clears the timer (see _handle_wall_contact).
+	var is_same_wall := (wall_nx == _last_wall_jump_dir) and _same_wall_cooldown_timer > 0.0
+	var jump_y       := wall_jump_force.y * (same_wall_penalty if is_same_wall else 1.0)
 
 	# Push away from wall and upward — direct velocity set bypasses the normal
 	# transition system since we want to stay in the JUMP state
-	velocity.x           = wall_nx * wall_jump_force.x
-	velocity.y           = wall_jump_force.y
-	_last_wall_jump_dir  = wall_nx
-	_wall_coyote_timer   = 0.0
-	_coyote_timer        = 0.0
-	_jump_buffer_timer   = 0.0
-	_visual_scale_target = visuals.squash_on_jump
+	velocity.x                = wall_nx * wall_jump_force.x
+	velocity.y                = jump_y
+	_last_wall_jump_dir       = wall_nx
+	_same_wall_cooldown_timer = same_wall_cooldown  # Start/restart the penalty window
+	_wall_coyote_timer        = 0.0
+	_coyote_timer             = 0.0
+	_jump_buffer_timer        = 0.0
+	_visual_scale_target      = visuals.squash_on_jump
 	if current_state != PlayerState.JUMP:
 		current_state = PlayerState.JUMP
 		state_changed.emit(current_state)

@@ -47,6 +47,7 @@ enum State { IDLE, SHAKING, OPENING, RESPAWNING }
 @export var trigger_area: Area3D
 
 @onready var _hinge: Node3D = $Hinge
+@onready var _shape: CollisionShape3D = $Hinge/Body/PlatformShape
 
 var _state: State = State.IDLE
 var _timer: float = 0.0
@@ -73,6 +74,10 @@ func _physics_process(delta: float) -> void:
 			_hinge.rotation.z = sin(t * shake_frequency) * deg_to_rad(shake_amplitude * 10.0)
 			if t >= shake_duration:
 				_hinge.rotation.z = 0.0
+				# Kill the collision the instant the door gives way — the player
+				# drops NOW. Without this, floor-snap keeps re-grabbing the tilting
+				# platform for several frames and the player hovers in mid-air.
+				_shape.disabled = true
 				_state = State.OPENING
 				_timer = 0.0
 
@@ -102,5 +107,6 @@ func _reset() -> void:
 	# Snap shut and re-arm
 	_open_deg          = 0.0
 	_hinge.rotation    = Vector3.ZERO
+	_shape.disabled    = false  # Solid again
 	_state             = State.IDLE
 	_timer             = 0.0

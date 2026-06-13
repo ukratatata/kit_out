@@ -1,39 +1,38 @@
 # res://scripts/game_state.gd
 # Kit Out — Global Game State (Autoload Singleton)
 #
-# REGISTER THIS AS AN AUTOLOAD:
-#   Project → Project Settings → Globals/Autoload tab
-#   Path: res://scripts/game_state.gd   Name: GameState   (Enable: on)
+# REGISTER AS AUTOLOAD: Project Settings → Globals/Autoload
+#   Path: res://scripts/game_state.gd   Name: GameState
 #
-# Persists across scene reloads (autoloads survive get_tree().reload_current_scene),
-# which is exactly what makes checkpoints work: the level reloads fresh but
-# GameState still remembers where the last checkpoint was.
+# Survives get_tree().reload_current_scene(), which is what makes checkpoints
+# work: the level reloads fresh but GameState still remembers the last one.
 
 extends Node
 
-## World-space position of the most recent checkpoint the player touched.
-## Vector3.INF means "no checkpoint yet" → respawn at the level's start point.
+## World-space respawn position of the most recent checkpoint reached.
+## Vector3.INF = no checkpoint yet → spawn at the level's default position.
 var last_checkpoint: Vector3 = Vector3.INF
 
-## Index of the active checkpoint (for ordering / UI). -1 = none yet.
-var checkpoint_index: int = -1
+## Progress measure of the active checkpoint (its X position along the track).
+## Checkpoints only override if they're FURTHER than this, so back-tracking
+## through an earlier checkpoint can't regress the respawn point.
+var checkpoint_progress: float = -INF
 
 
-## Called by a Checkpoint when the player first reaches it.
-## Ignores out-of-order triggers so running backward can't un-set progress.
-func set_checkpoint(world_pos: Vector3, index: int) -> void:
-	if index <= checkpoint_index:
+## Called by a Checkpoint when the player reaches it. `progress` is the
+## checkpoint's X coordinate; only forward progress is accepted.
+func set_checkpoint(world_pos: Vector3, progress: float) -> void:
+	if progress <= checkpoint_progress:
 		return
-	last_checkpoint  = world_pos
-	checkpoint_index = index
+	last_checkpoint     = world_pos
+	checkpoint_progress = progress
 
 
-## True if any checkpoint has been activated this run.
 func has_checkpoint() -> bool:
 	return last_checkpoint != Vector3.INF
 
 
-## Wipe checkpoint progress — call when restarting the level from the very start.
+## Wipe progress — call when restarting the level from the very start.
 func clear_checkpoints() -> void:
-	last_checkpoint  = Vector3.INF
-	checkpoint_index = -1
+	last_checkpoint     = Vector3.INF
+	checkpoint_progress = -INF
