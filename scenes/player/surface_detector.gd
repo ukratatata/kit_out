@@ -11,6 +11,15 @@ extends Node
 # Grab a reference to the main player script
 @onready var player: KitOutPlayer = get_parent()
 
+## Reused every frame instead of allocating a new query object per call.
+## Created once in _ready(); get_surface() just updates its from/to each frame.
+var _floor_ray_query: PhysicsRayQueryParameters3D
+
+
+func _ready() -> void:
+	_floor_ray_query = PhysicsRayQueryParameters3D.create(Vector3.ZERO, Vector3.ZERO)
+	_floor_ray_query.exclude = [player.get_rid()]  # Never hit our own capsule
+
 ## Returns the SurfaceData of the special surface underfoot, or null when on
 ## plain ground or airborne. Uses a short downward raycast instead of slide
 ## collisions: with gravity disabled on the floor, move_and_slide often records
@@ -20,14 +29,13 @@ func get_surface() -> SurfaceData:
 	if not player.is_on_floor() or custom_surfaces.is_empty():
 		return null
 
+	# Update the reused query in place — no per-frame allocation
+	_floor_ray_query.from = player.global_position
+	_floor_ray_query.to   = player.global_position + Vector3.DOWN * (player.stand_half_height + slope_snap_length + 0.9)
+	_floor_ray_query.collision_mask = player.collision_mask
+
 	var space := player.get_world_3d().direct_space_state
-	var ray := PhysicsRayQueryParameters3D.create(
-		player.global_position,
-		player.global_position + Vector3.DOWN * (player.stand_half_height + slope_snap_length + 0.9),
-		player.collision_mask,
-		[player.get_rid()]  # Never hit our own capsule
-	)
-	var hit := space.intersect_ray(ray)
+	var hit := space.intersect_ray(_floor_ray_query)
 	if hit.is_empty():
 		return null
 

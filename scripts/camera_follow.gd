@@ -32,8 +32,11 @@ extends Camera3D
 ## so the camera can lead generously forward while staying tight behind.
 @export var max_distance_behind: float = 2.0
 ## How far the camera leads in the direction of travel to show upcoming obstacles.
-## Flips sign automatically when running left (see _physics_process).
 @export var screen_offset_x: float   = 4.0
+## When ON, the lead flips to point left while running left (always shows what's
+## ahead). When OFF (default), the lead always points right — good for a game
+## that mostly moves rightward, avoids the camera swinging on small backtracks.
+@export var directional_offset: bool = false
 ## How fast the lead offset eases when you reverse direction.
 @export var offset_flip_speed: float = 3.0
 ## Camera height above the player.
@@ -101,13 +104,14 @@ func _physics_process(delta: float) -> void:
 		cam_vel = Vector2(target.velocity.x, target.velocity.y)
 
 	# ── 1. Deadzone (X axis) ──────────────────────────────────────────────────
-	# Lead offset flips with travel direction so the camera always shows what's
-	# ahead. Eased so reversing direction doesn't snap the framing.
+	# Lead offset. With directional_offset ON it flips to follow travel direction
+	# so the camera always shows what's ahead; OFF it stays pointing right.
 	var offset_target := screen_offset_x
-	if cam_vel.x < -0.5:
-		offset_target = -screen_offset_x
-	elif cam_vel.x <= 0.5:
-		offset_target = _current_offset_x  # Hold current lead when nearly still
+	if directional_offset:
+		if cam_vel.x < -0.5:
+			offset_target = -screen_offset_x
+		elif cam_vel.x <= 0.5:
+			offset_target = _current_offset_x  # Hold current lead when nearly still
 	_current_offset_x = lerp(_current_offset_x, offset_target, offset_flip_speed * delta)
 
 	var ideal_center_x := target.global_position.x + _current_offset_x

@@ -80,4 +80,14 @@ Last synced with implementation: June 2026
 - Multiplayer: time attack ships first (race timer + best times, Phase 5);
   local split-screen considered for a later version.
 - Win/loss structure, level count, and progression: to define during Phase 4-5.
-- Start line / finish line / race timer: NOT YET BUILT (Phase 4-5).
+- Start line / finish line / race timer: BUILT (race_gate.tscn START/FINISH +
+  race_hud.tscn live timer & best time, stored in GameState).
+
+> Phase 4-5 status (game loop):
+
+- Race timer + best time — DONE (GameState tracks run_time / best_time).
+- Start & finish gates — DONE (race_gate.tscn, mode = START or FINISH).
+- Race HUD — DONE (live timer, best time, finish banner).
+- Designed first level — NOT STARTED (test_level is still a sandbox).
+- Main menu / level select — NOT STARTED.
+- Win flow beyond the finish banner (next level, retry) — NOT STARTED.

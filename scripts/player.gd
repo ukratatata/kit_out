@@ -154,6 +154,7 @@ var _wall_coyote_timer: float    = 0.0
 var _wall_coyote_normal_x: float = 0.0  # Wall normal sign captured for the coyote window
 var _last_wall_jump_dir: float   = 0.0  # Normal sign of the last wall jumped — blocks same-wall re-jumps
 var _same_wall_cooldown_timer: float = 0.0
+var _entering_special_jump: bool = false  # True while bounce()/wall-jump drives a JUMP transition
 
 var sprint_stamina: float     = 0.0
 
@@ -315,16 +316,21 @@ func _to(new_state: PlayerState) -> void:
 				_visual_scale_target = Vector3.ONE
 
 	# ── Entry setup ──
+	# _entering_special_jump is set true by bounce()/wall-jump BEFORE they call
+	# _to(JUMP), so the standard jump velocity and the slide-momentum bonus are
+	# skipped — those callers set their own velocity right after _to() returns.
 	match new_state:
 		PlayerState.JUMP:
-			velocity.y           = jump_velocity
 			_coyote_timer        = 0.0
 			_jump_buffer_timer   = 0.0
 			_visual_base_scale   = Vector3.ONE  # No longer crouching once airborne
 			_visual_scale_target = visuals.squash_on_jump
-			# Momentum reward: slide-jumping above run speed gets a 15% horizontal boost
-			if current_state == PlayerState.SLIDE and absf(velocity.x) > speed:
-				velocity.x *= 1.15
+			if not _entering_special_jump:
+				velocity.y = jump_velocity
+				# Momentum reward: slide-jumping above run speed gets a 15% boost.
+				# Only for normal jumps — bounces/wall-jumps set their own velocity.
+				if current_state == PlayerState.SLIDE and absf(velocity.x) > speed:
+					velocity.x *= 1.15
 
 		PlayerState.OFF_BALANCE:
 			_off_balance_timer = off_balance_duration
@@ -688,19 +694,18 @@ func _try_wall_jump() -> void:
 	var is_same_wall := (wall_nx == _last_wall_jump_dir) and _same_wall_cooldown_timer > 0.0
 	var jump_y       := wall_jump_force.y * (same_wall_penalty if is_same_wall else 1.0)
 
-	# Push away from wall and upward — direct velocity set bypasses the normal
-	# transition system since we want to stay in the JUMP state
-	velocity.x                = wall_nx * wall_jump_force.x
-	velocity.y                = jump_y
 	_last_wall_jump_dir       = wall_nx
 	_same_wall_cooldown_timer = same_wall_cooldown  # Start/restart the penalty window
 	_wall_coyote_timer        = 0.0
-	_coyote_timer             = 0.0
-	_jump_buffer_timer        = 0.0
-	_visual_scale_target      = visuals.squash_on_jump
-	if current_state != PlayerState.JUMP:
-		current_state = PlayerState.JUMP
-		state_changed.emit(current_state)
+
+	# Go through _to(JUMP) so all entry cleanup runs (crouch reset, scales, future
+	# jump SFX/particles), then overwrite the velocity with the wall-jump impulse.
+	# _entering_special_jump tells the JUMP entry to skip its default velocity.
+	_entering_special_jump = true
+	_to(PlayerState.JUMP)
+	_entering_special_jump = false
+	velocity.x = wall_nx * wall_jump_force.x
+	velocity.y = jump_y
 
 
 func _set_crouch(crouching: bool) -> void:
@@ -750,17 +755,15 @@ func apply_hit_3d(knockback: Vector3) -> void:
 ## sets an absolute upward velocity (consistent apex regardless of fall speed),
 ## optionally preserves horizontal momentum, and enters the air state cleanly.
 func bounce(force: float, horizontal_keep: float = 1.0) -> void:
+	# Route through _to(JUMP) for full entry cleanup (crouch reset, scales, and
+	# any future jump SFX/particles), then overwrite velocity with the bounce.
+	# _entering_special_jump tells the JUMP entry to skip its default velocity
+	# and the slide-momentum bonus — a bounce is not a slide-jump.
+	_entering_special_jump = true
+	_to(PlayerState.JUMP)
+	_entering_special_jump = false
 	velocity.y = force
 	velocity.x *= horizontal_keep
-	# Force into JUMP so air control, squash, and wall logic all apply normally.
-	# Direct assignment (not _to) avoids re-running JUMP entry, which would
-	# overwrite velocity.y with the standard jump_velocity.
-	if current_state != PlayerState.JUMP and current_state != PlayerState.FALL:
-		_set_crouch(false)  # In case they were crouched/sliding on the pad
-		_visual_base_scale   = Vector3.ONE
-	current_state = PlayerState.JUMP
-	_visual_scale_target = visuals.squash_on_jump
-	state_changed.emit(current_state)
 
 
 ## Public respawn interface for KillZone (and anything that needs to reset the

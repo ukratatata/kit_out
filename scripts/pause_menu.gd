@@ -43,15 +43,23 @@ func _on_resume() -> void:
 
 
 func _on_restart_level() -> void:
-	GameState.clear_checkpoints()       # Wipe progress — start from the top
+	GameState.reset_level()             # Wipe checkpoints AND timer (keeps best_time)
 	get_tree().paused = false
 	get_tree().reload_current_scene()
 
 
 func _on_restart_checkpoint() -> void:
-	# Keep GameState.last_checkpoint as-is; the player reads it on _ready()
+	# Keep checkpoints; reset only the timer so the run re-times from the start
+	# line. The player reads last_checkpoint on _ready().
+	GameState.reset_timer()
 	get_tree().paused = false
 	get_tree().reload_current_scene()
+
+
+func _on_quit_to_menu() -> void:
+	GameState.reset_level()  # Leaving a level abandons its run
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
 # ── UI construction ───────────────────────────────────────────────────────────
@@ -88,6 +96,7 @@ func _build_ui() -> void:
 	box.add_child(_make_button("Resume",            _on_resume))
 	box.add_child(_make_button("Restart Level",     _on_restart_level))
 	box.add_child(_make_button("From Checkpoint",   _on_restart_checkpoint))
+	box.add_child(_make_button("Quit to Menu",      _on_quit_to_menu))
 
 
 func _make_button(text: String, handler: Callable) -> Button:
