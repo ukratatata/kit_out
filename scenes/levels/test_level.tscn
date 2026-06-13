@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/props/spinning_bar.tscn" id="7_hfwtw"]
 [ext_resource type="PackedScene" path="res://scenes/props/collapsing_platform.tscn" id="8_2mu0v"]
 [ext_resource type="PackedScene" path="res://scenes/props/swinging_hammer.tscn" id="8_hfwtw"]
+[ext_resource type="PackedScene" path="res://scenes/props/trampoline.tscn" id="9_2mu0v"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_yautc"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -327,6 +328,24 @@ gap_before_shake = 1.0
 
 [node name="CollapsingPlatform8" parent="World/floor" unique_id=908476929 instance=ExtResource("8_2mu0v")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58.256653, 29.332552, 0)
+
+[node name="SpinningBar2" parent="World/floor" unique_id=421078800 instance=ExtResource("7_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35.986446, 3.4209404, 0)
+
+[node name="SpinningBar3" parent="World/floor" unique_id=1312456350 instance=ExtResource("7_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39.9258, 3.4209404, 0)
+
+[node name="SpinningBar4" parent="World/floor" unique_id=605624250 instance=ExtResource("7_hfwtw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.69612, 3.4209404, 0)
+
+[node name="Trampoline" parent="World/floor" unique_id=857847917 instance=ExtResource("9_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64.217026, -16.96091, 0)
+
+[node name="Trampoline2" parent="World/floor" unique_id=1437694942 instance=ExtResource("9_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70.39106, -7.6558647, 0)
+
+[node name="Trampoline3" parent="World/floor" unique_id=1304195694 instance=ExtResource("9_2mu0v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63.35514, 1.1683273, 0)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1908956664 node_paths=PackedStringArray("player")]
 script = ExtResource("4_v45ci")

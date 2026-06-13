@@ -1,62 +1,59 @@
 # res://scripts/collapsing_platform.gd
-# Kit Out — Collapsing Platform (Phase 3, obstacle #2)
+# Kit Out — Collapsing Platform / Trapdoor (Phase 3, obstacle #2)
 #
-# SETUP: place the scene root where the TOP SURFACE of the platform should be.
-# The Body node sits at local (0,0,0), so position the root so the top of the
-# 0.5-tall Body is flush with the floor level you want.
+# Swings open like a trapdoor: the platform is hinged along its −Z edge and
+# rotates downward around the X axis, dropping the player through.
 #
-# FLOW: IDLE → player steps on TriggerZone → SHAKING (visual warning) →
-#       FALLING (collision off, platform drops) → RESPAWNING (invisible timer)
-#       → IDLE (reset, ready again).
+# SETUP: place the scene root where the TOP SURFACE should be, centred on the
+# track. The Hinge sits at the −Z edge; the platform extends toward +Z from it.
+#
+# FLOW: IDLE → player steps on TriggerZone → SHAKING (warning rattle) →
+#       OPENING (hinge rotates down, player falls through) →
+#       RESPAWNING (invisible) → IDLE (snaps shut, ready again).
 #
 # DESIGN NOTES:
-# • gap_before_shake (default 0 s) delays the shake after first contact.
-#   Set to 0.2–0.4 s to give slower players a fighting chance on the first run.
-# • respawn_time (default 3.5 s) controls how long the gap persists. Longer =
-#   riskier to wait around; shorter = players can stall and take a safer gap.
-# • Platforms are most interesting in sequences: a safe solid platform followed
-#   immediately by two collapses forces the player to commit to momentum.
+# • open_angle controls how far the door swings. 90°+ guarantees the player
+#   slides off; shallower angles can let a fast player scramble across.
+# • A trapdoor reads more clearly than a vertical drop — the player SEES the
+#   floor tilting away, which telegraphs the danger better than a sink.
+# • gap_before_shake = 0 fires instantly; small positive values bait the player.
 
 class_name CollapsingPlatform
 extends Node3D
 
 
-enum State { IDLE, SHAKING, FALLING, RESPAWNING }
+enum State { IDLE, SHAKING, OPENING, RESPAWNING }
 
 
 @export_group("Timing")
-## Extra wait after first contact before shaking begins.
-## 0 s = shake starts the instant the player steps on. 0.3 s gives a brief
-## false sense of security — harder reads, but can feel cheap; use sparingly.
+## Extra wait after first contact before the warning rattle begins.
 @export var gap_before_shake: float = 0.0
-## Duration of the shake before the platform drops.
-@export var shake_duration: float   = 0.65
-## Seconds the platform is absent before it reappears.
+## Duration of the rattle before the door swings open.
+@export var shake_duration: float   = 0.6
+## Seconds the door stays open+absent before resetting.
 @export var respawn_time: float     = 3.5
 
 @export_group("Feel")
-## Lateral shake offset in metres.
-@export var shake_amplitude: float  = 0.07
-## Oscillations per second during the shake.
-@export var shake_frequency: float  = 24.0
-## How far the platform falls before the respawn timer starts.
-@export var fall_distance: float    = 22.0
+## How far the door swings down (degrees). 90+ guarantees a drop.
+@export var open_angle: float       = 100.0
+## How fast the door accelerates open (deg/sec²-ish feel).
+@export var open_speed: float       = 540.0
+## Rattle offset in metres during the warning shake.
+@export var shake_amplitude: float  = 0.06
+## Rattle oscillations per second.
+@export var shake_frequency: float  = 26.0
 
 ## Area3D slab on the top surface — assign in the Inspector.
 @export var trigger_area: Area3D
 
-@onready var _body:  Node3D            = $Body
-@onready var _shape: CollisionShape3D  = $Body/PlatformShape
+@onready var _hinge: Node3D = $Hinge
 
-var _state:      State  = State.IDLE
-var _timer:      float  = 0.0
-var _fall_vel:   float  = 0.0
-var _origin:     Vector3
-var _gravity:    float  = ProjectSettings.get_setting("physics/3d/default_gravity")
+var _state: State = State.IDLE
+var _timer: float = 0.0
+var _open_deg: float = 0.0
 
 
 func _ready() -> void:
-	_origin = _body.position
 	if trigger_area:
 		trigger_area.body_entered.connect(_on_body_entered)
 
@@ -72,16 +69,22 @@ func _physics_process(delta: float) -> void:
 			if _timer < gap_before_shake:
 				return
 			var t := _timer - gap_before_shake
-			_body.position.x = _origin.x + sin(t * shake_frequency) * shake_amplitude
-			_body.position.y = _origin.y + sin(t * shake_frequency * 1.3) * shake_amplitude * 0.4
+			# Rattle around the Z axis (visible tilt) without opening yet
+			_hinge.rotation.z = sin(t * shake_frequency) * deg_to_rad(shake_amplitude * 10.0)
 			if t >= shake_duration:
-				_begin_fall()
+				_hinge.rotation.z = 0.0
+				_state = State.OPENING
+				_timer = 0.0
 
-		State.FALLING:
-			_fall_vel         += _gravity * delta
-			_body.position.y  -= _fall_vel * delta
-			if _body.position.y < _origin.y - fall_distance:
-				_begin_respawn()
+		State.OPENING:
+			# Accelerate the swing for a satisfying "give way" feel
+			_open_deg = min(_open_deg + open_speed * delta, open_angle)
+			# Positive X rotation tips the +Z platform edge DOWNWARD (opens down,
+			# not up). The hinge sits at the −Z edge so the far edge drops away.
+			_hinge.rotation.x = deg_to_rad(_open_deg)
+			if _open_deg >= open_angle:
+				_state = State.RESPAWNING
+				_timer = 0.0
 
 		State.RESPAWNING:
 			if _timer >= respawn_time:
@@ -95,24 +98,9 @@ func _on_body_entered(body: Node3D) -> void:
 	_timer = 0.0
 
 
-func _begin_fall() -> void:
-	_state            = State.FALLING
-	_timer            = 0.0
-	_fall_vel         = 0.0
-	_body.position.x  = _origin.x   # Snap lateral shake to centre before drop
-	_shape.disabled   = true         # Player falls through immediately
-
-
-func _begin_respawn() -> void:
-	_state         = State.RESPAWNING
-	_timer         = 0.0
-	_body.visible  = false
-
-
 func _reset() -> void:
-	_body.position    = _origin
-	_shape.disabled   = false
-	_body.visible     = true
-	_state            = State.IDLE
-	_timer            = 0.0
-	_fall_vel         = 0.0
+	# Snap shut and re-arm
+	_open_deg          = 0.0
+	_hinge.rotation    = Vector3.ZERO
+	_state             = State.IDLE
+	_timer             = 0.0

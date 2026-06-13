@@ -202,8 +202,19 @@ func _physics_process(delta: float) -> void:
 		floor_snap_length = surface.slope_snap_length 
 	# ─────────────────────────────
 
-	# Belt-and-suspenders 2.5D lock (axis_lock_linear_z is also set in the scene)
-	velocity.z = 0.0
+	# Belt-and-suspenders 2.5D lock (axis_lock_linear_z is also set in the scene).
+	# EXCEPTION: while an off-track knock is active, Z is freed so the player can
+	# be ejected from the lane; afterwards they're eased back to the play plane.
+	if hazards.off_track_timer > 0.0:
+		axis_lock_linear_z = false
+	else:
+		axis_lock_linear_z = true
+		if absf(global_position.z) > 0.05:
+			# Pull back toward the play plane, then kill residual Z velocity
+			velocity.z = -global_position.z * 6.0
+		else:
+			global_position.z = 0.0
+			velocity.z = 0.0
 	move_and_slide()
 
 	_update_camera_velocity(delta)
@@ -564,10 +575,9 @@ func _air_move(delta: float, input_dir: float) -> void:
 
 func _land() -> void:
 	_visual_scale_target = visuals.squash_on_land
-	_last_wall_jump_dir       = 0.0
+	_last_wall_jump_dir       = 0.0  # Touching the floor re-arms every wall
 	_same_wall_cooldown_timer = 0.0  # Floor resets the same-wall penalty
 	landed.emit()
-	_last_wall_jump_dir = 0.0  # Touching the floor re-arms every wall
 	# Buffered jump fires immediately on touch-down
 	if _jump_buffer_timer > 0.0:
 		_to(PlayerState.JUMP)
@@ -702,3 +712,25 @@ func enter_stunned() -> void:
 # In player.gd — just delegates, no logic here
 func apply_hit(knockback: Vector2) -> void:
 	hazards.apply_hit(knockback)
+
+## 3D hit variant for off-track hazards (spinning bars). The Z component ejects
+## the player from the lane; the Z-recovery in _physics_process pulls them back.
+func apply_hit_3d(knockback: Vector3) -> void:
+	hazards.apply_hit_3d(knockback)
+
+
+## Public bounce interface for trampolines/bounce pads. Friendly, not a hazard:
+## sets an absolute upward velocity (consistent apex regardless of fall speed),
+## optionally preserves horizontal momentum, and enters the air state cleanly.
+func bounce(force: float, horizontal_keep: float = 1.0) -> void:
+	velocity.y = force
+	velocity.x *= horizontal_keep
+	# Force into JUMP so air control, squash, and wall logic all apply normally.
+	# Direct assignment (not _to) avoids re-running JUMP entry, which would
+	# overwrite velocity.y with the standard jump_velocity.
+	if current_state != PlayerState.JUMP and current_state != PlayerState.FALL:
+		_set_crouch(false)  # In case they were crouched/sliding on the pad
+		_visual_base_scale   = Vector3.ONE
+	current_state = PlayerState.JUMP
+	_visual_scale_target = visuals.squash_on_jump
+	state_changed.emit(current_state)

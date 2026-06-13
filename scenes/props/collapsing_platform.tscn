@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/collapsing_platform.gd" id="1_collapse"]
 
@@ -13,32 +13,37 @@ size = Vector3(6, 0.5, 4)
 size = Vector3(6, 0.5, 4)
 
 [sub_resource type="BoxShape3D" id="shape_trigger"]
-size = Vector3(5.6, 0.3, 3.6)
+size = Vector3(5.6, 0.4, 3.6)
 
 
 [node name="CollapsingPlatform" type="Node3D" node_paths=PackedStringArray("trigger_area")]
 script = ExtResource("1_collapse")
-trigger_area = NodePath("Body/TriggerZone")
+trigger_area = NodePath("Hinge/Body/TriggerZone")
 
 
-[node name="Body" type="AnimatableBody3D" parent="."]
+[node name="Hinge" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)
+
+
+[node name="Body" type="AnimatableBody3D" parent="Hinge"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
 collision_layer = 1
-collision_mask = 0
+collision_mask  = 0
 
 
-[node name="PlatformMesh" type="MeshInstance3D" parent="Body"]
+[node name="PlatformMesh" type="MeshInstance3D" parent="Hinge/Body"]
 mesh = SubResource("mesh_platform")
 
 
-[node name="PlatformShape" type="CollisionShape3D" parent="Body"]
+[node name="PlatformShape" type="CollisionShape3D" parent="Hinge/Body"]
 shape = SubResource("shape_platform")
 
 
-[node name="TriggerZone" type="Area3D" parent="Body"]
+[node name="TriggerZone" type="Area3D" parent="Hinge/Body"]
 collision_layer = 0
-collision_mask = 2
+collision_mask  = 2
 
 
-[node name="TriggerShape" type="CollisionShape3D" parent="Body/TriggerZone"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+[node name="TriggerShape" type="CollisionShape3D" parent="Hinge/Body/TriggerZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
 shape = SubResource("shape_trigger")

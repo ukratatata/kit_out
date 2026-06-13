@@ -40,7 +40,7 @@ extends Node3D
 @export_range(0.0, 1.0, 0.05) var phase_offset: float = 0.0
 ## Knockback applied on hit: x = push away from the anchor, y = upward pop.
 ## Always identical — the player's velocity is set, not added to.
-@export var knockback: Vector2 = Vector2(12.0, 5.0)
+@export var knockback: Vector2 = Vector2(15.0, 15.0)
 ## Seconds of immunity from THIS hammer after it lands a hit.
 @export var hit_cooldown: float = 0.6
 ## The Area3D on the hammer head that detects the player (mask = Player layer).
