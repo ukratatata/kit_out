@@ -10,6 +10,9 @@
 extends Control
 
 
+var _first_level_button: Button 
+
+
 func _ready() -> void:
 	_build_ui()
 
@@ -49,7 +52,7 @@ func _build_ui() -> void:
 	box.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "A cat's obstacle course"
+	subtitle.text = "Buenas, probando a ver que tal va esto"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 20)
 	subtitle.modulate = Color(1, 1, 1, 0.6)
@@ -65,6 +68,9 @@ func _build_ui() -> void:
 		var b := _make_button("Play  ·  " + str(level["name"]))
 		b.pressed.connect(_start_level.bind(path))
 		box.add_child(b)
+		if not _first_level_button:
+			_first_level_button = b
+			_first_level_button.grab_focus()
 
 	box.add_child(_make_button_plain("Quit", _quit))
 

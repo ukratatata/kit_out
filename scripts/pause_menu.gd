@@ -16,6 +16,7 @@ extends CanvasLayer
 
 var _panel: Control
 var _paused: bool = false
+var _first_button: Button
 
 
 func _ready() -> void:
@@ -28,12 +29,18 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_pause"):
 		_toggle()
+	elif _paused and event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_toggle()
 
 
 func _toggle() -> void:
 	_paused = not _paused
 	_panel.visible = _paused
 	get_tree().paused = _paused
+	
+	if _paused and _first_button:
+		_first_button.grab_focus()
 
 
 # ── Button actions ────────────────────────────────────────────────────────────
@@ -51,9 +58,17 @@ func _on_restart_level() -> void:
 func _on_restart_checkpoint() -> void:
 	# Keep checkpoints; reset only the timer so the run re-times from the start
 	# line. The player reads last_checkpoint on _ready().
-	GameState.reset_timer()
 	get_tree().paused = false
-	get_tree().reload_current_scene()
+	_toggle() 
+	
+	# 2. Buscamos al jugador en el mundo de forma segura
+	var player = get_tree().get_first_node_in_group("player")
+	if player:
+		player.respawn_at(GameState.last_checkpoint)
+		
+		# 4. ¡CRÍTICO! Matamos la inercia. Si el jugador murió cayendo a 100km/h
+		# al vacío, no queremos que reaparezca en el checkpoint con esa misma velocidad.
+		player.velocity = Vector3.ZERO
 
 
 func _on_quit_to_menu() -> void:
@@ -93,7 +108,8 @@ func _build_ui() -> void:
 	title.add_theme_font_size_override("font_size", 32)
 	box.add_child(title)
 
-	box.add_child(_make_button("Resume",            _on_resume))
+	_first_button = _make_button("Resume", _on_resume)
+	box.add_child(_first_button)
 	box.add_child(_make_button("Restart Level",     _on_restart_level))
 	box.add_child(_make_button("From Checkpoint",   _on_restart_checkpoint))
 	box.add_child(_make_button("Quit to Menu",      _on_quit_to_menu))

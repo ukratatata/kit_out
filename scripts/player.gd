@@ -221,16 +221,12 @@ func _physics_process(delta: float) -> void:
 	# Belt-and-suspenders 2.5D lock (axis_lock_linear_z is also set in the scene).
 	# EXCEPTION: while an off-track knock is active, Z is freed so the player can
 	# be ejected from the lane; afterwards they're eased back to the play plane.
-	if hazards.off_track_timer > 0.0:
+	if hazards.off_track:
 		axis_lock_linear_z = false
 	else:
 		axis_lock_linear_z = true
-		if absf(global_position.z) > 0.05:
-			# Pull back toward the play plane, then kill residual Z velocity
-			velocity.z = -global_position.z * 6.0
-		else:
-			global_position.z = 0.0
-			velocity.z = 0.0
+		velocity.z = 0.0
+		global_position.z = 0.0
 	move_and_slide()
 
 	_update_camera_velocity(delta)
@@ -710,9 +706,9 @@ func _try_wall_jump() -> void:
 
 func _set_crouch(crouching: bool) -> void:
 	if stand_collision:
-		stand_collision.disabled = crouching
+		stand_collision.set_deferred("disabled", crouching)
 	if crouch_collision:
-		crouch_collision.disabled = not crouching
+		crouch_collision.set_deferred("disabled", not crouching)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -772,15 +768,22 @@ func bounce(force: float, horizontal_keep: float = 1.0) -> void:
 func respawn_at(world_pos: Vector3) -> void:
 	global_position = world_pos
 	velocity = Vector3.ZERO
+	
+	hazards.off_track = false
+	hazards.stun_timer = 0.0
+	hazards.iframe_timer = 0.0
 	axis_lock_linear_z = true
+	
 	_set_crouch(false)
 	_air_crouch = false
 	_visual_base_scale   = Vector3.ONE
 	_visual_scale_target = Vector3.ONE
+	
 	_coyote_timer = 0.0
 	_jump_buffer_timer = 0.0
 	_same_wall_cooldown_timer = 0.0
 	_last_wall_jump_dir = 0.0
 	sprint_stamina = sprint_stamina_max
+	
 	current_state = PlayerState.FALL
 	state_changed.emit(current_state)

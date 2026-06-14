@@ -53,7 +53,10 @@ target = NodePath("../Player")
 [node name="World" type="Node" parent="." unique_id=1111112637]
 
 [node name="ProjectileShooter" parent="World" unique_id=1094650809 instance=ExtResource("3_wobmc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.853714, 1.9612427, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 197.88715, 13.87999, 0)
+
+[node name="ProjectileShooter2" parent="World" unique_id=1524618228 instance=ExtResource("3_wobmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 197.88715, 9.87999, 0)
 
 [node name="GroundZone0_1" type="CSGBox3D" parent="World" unique_id=716881944]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, -0.5, 0)
@@ -116,19 +119,29 @@ material = SubResource("mat_floor")
 [node name="Hammer_Z1" parent="Obstacles" unique_id=1398290277 instance=ExtResource("3_hammer")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 5, 0)
 
-[node name="Trap_Z2_a" parent="Obstacles" unique_id=1292597454 instance=ExtResource("4_trap")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70, 2, 0)
+[node name="Hammer_Z2" parent="Obstacles" unique_id=578645090 instance=ExtResource("3_hammer")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 5, 0)
+
+[node name="Trap_Z2_a" parent="Obstacles" unique_id=572027313 instance=ExtResource("4_trap")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0, 0)
 
 [node name="Trap_Z2_b" parent="Obstacles" unique_id=701738048 instance=ExtResource("4_trap")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 4, 0)
-gap_before_shake = 0.25
 
-[node name="Trap_Z2_c" parent="Obstacles" unique_id=572027313 instance=ExtResource("4_trap")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0, 0)
-gap_before_shake = 0.25
+[node name="Trap_Z2_c" parent="Obstacles" unique_id=1292597454 instance=ExtResource("4_trap")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70, 2, 0)
 
 [node name="Bar_Z2" parent="Obstacles" unique_id=550612515 instance=ExtResource("5_bar")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 98, 2.758407, 0)
+
+[node name="Bar_Z3" parent="Obstacles" unique_id=1150014766 instance=ExtResource("5_bar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.49189, 2.758407, 0)
+
+[node name="Bar_Z4" parent="Obstacles" unique_id=1922294591 instance=ExtResource("5_bar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.299, 2.758407, 0)
+
+[node name="Bar_Z5" parent="Obstacles" unique_id=927161014 instance=ExtResource("5_bar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48.99429, 2.758407, 0)
 
 [node name="Bubble_Z3_a" parent="Obstacles" unique_id=1371579492 instance=ExtResource("6_bubble")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 133, 1, 0)
@@ -136,7 +149,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 133, 1, 0)
 [node name="Bubble_Z3_b" parent="Obstacles" unique_id=2129727161 instance=ExtResource("6_bubble")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 136, 5, 0)
 
-[node name="Bubble_Z3_b2" parent="Obstacles" unique_id=1761002216 instance=ExtResource("6_bubble")]
+[node name="Bubble_Z3_c" parent="Obstacles" unique_id=1761002216 instance=ExtResource("6_bubble")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 132, 9, 0)
 
 [node name="Skip_Z4" parent="Obstacles" unique_id=1266249676 instance=ExtResource("7_skip")]
@@ -148,13 +161,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 168, 30.476496, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 0)
 
 [node name="Checkpoint_afterZ2" parent="Checkpoints" unique_id=136189234 instance=ExtResource("8_chk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 112, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 118, 0, 0)
 
 [node name="Checkpoint_topZ3" parent="Checkpoints" unique_id=1032675578 instance=ExtResource("8_chk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 143, 16, 0)
 
 [node name="KillZone" parent="." unique_id=890740936 instance=ExtResource("9_kill")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, -20, 0)
+transform = Transform3D(-0.585, 0, 0, 0, -0.585, 0, 0, 0, -10.56956, 100, -20, 0)
 
 [node name="StartGate" parent="." unique_id=1763536856 instance=ExtResource("10_gate")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)

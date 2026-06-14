@@ -8,9 +8,9 @@ extends Node
 @export var squash_on_land: Vector3       = Vector3(1.35, 0.70, 1.35)
 @export var squash_recovery_speed: float  = 12.0
 ## Lean angle (radians) at the start of a sprint when stamina is full.
-@export var sprint_lean_base: float   = 0.05
+@export var sprint_lean_base: float   = 0.25
 ## Extra lean added as stamina drains. At 0 stamina: total lean = base + max ≈ 14°.
-@export var sprint_lean_max: float    = 0.20
+@export var sprint_lean_max: float    = 0.35
 ## How quickly the lean settles to its target angle.
 @export var sprint_lean_speed: float  = 6.0
 ## Seconds of standing idle before the cat turns to look at the camera.

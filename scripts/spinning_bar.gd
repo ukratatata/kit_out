@@ -65,4 +65,5 @@ func _hit(player: KitOutPlayer) -> void:
 	var dir := signf(player.global_position.x - global_position.x)
 	if dir == 0.0:
 		dir = 1.0
+	player.global_position.y += 0.5
 	player.apply_hit_3d(Vector3(dir * knockback.x, knockback.y, knockback.z))
