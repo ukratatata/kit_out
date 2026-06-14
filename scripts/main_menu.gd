@@ -10,20 +10,13 @@
 extends Control
 
 
-## Levels offered on the menu. Add entries as you build more courses.
-const LEVELS := [
-	{ "name": "Cat Course 1", "path": "res://scenes/levels/cat_course_1.tscn" },
-]
-
-
 func _ready() -> void:
 	_build_ui()
 
 
 func _start_level(path: String) -> void:
-	# Fresh run: clear any checkpoint/timer state from a previous play session
-	GameState.reset_level()
-	get_tree().change_scene_to_file(path)
+	# start_level resets run state, records the active level, and changes scene.
+	GameState.start_level(path)
 
 
 func _quit() -> void:
@@ -66,8 +59,8 @@ func _build_ui() -> void:
 	spacer.custom_minimum_size = Vector2(0, 20)
 	box.add_child(spacer)
 
-	# One Play button per level
-	for level in LEVELS:
+	# One Play button per level, read from the single registry in GameState
+	for level in GameState.LEVELS:
 		var path: String = level["path"]
 		var b := _make_button("Play  ·  " + str(level["name"]))
 		b.pressed.connect(_start_level.bind(path))

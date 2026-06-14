@@ -28,6 +28,17 @@ var run_time: float = 0.0
 ## Best completion time for this level (seconds). INF = none set yet.
 var best_time: float = INF
 
+# ── Level registry ────────────────────────────────────────────────────────────
+## Ordered list of playable levels. The main menu and the "Next level" button
+## both read this. Add an entry per course as you build them.
+const LEVELS: Array[Dictionary] = [
+	{ "name": "Cat Course 1", "path": "res://scenes/levels/cat_course_1.tscn" },
+]
+
+## Path of the level currently being played. Set by start_level() / the menu.
+## Lets the finish screen know which level to retry and what comes next.
+var current_level_path: String = ""
+
 var _timing: bool = false
 var _finished: bool = false
 
@@ -56,6 +67,11 @@ func finish_run() -> void:
 		return
 	_timing   = false
 	_finished = true
+	# Safety net: if the level was launched directly (F6 in the editor) rather
+	# than through the menu, current_level_path is empty — fill it from the live
+	# scene so "Retry"/"Next level" still work.
+	if current_level_path == "" and get_tree().current_scene:
+		current_level_path = get_tree().current_scene.scene_file_path
 	var is_best := run_time < best_time
 	if is_best:
 		best_time = run_time
@@ -97,3 +113,33 @@ func clear_checkpoints() -> void:
 func reset_level() -> void:
 	clear_checkpoints()
 	reset_timer()
+
+
+# ── Level flow ────────────────────────────────────────────────────────────────
+
+## Loads a level cleanly: resets run state, remembers which level is active,
+## and changes scene. Called by the main menu and the "Next level" button.
+## best_time is per-session and per-level; switching levels clears it so each
+## course tracks its own best (until we add per-level disk saves).
+func start_level(path: String) -> void:
+	reset_level()
+	if path != current_level_path:
+		best_time = INF  # New level — its own best time
+	current_level_path = path
+	get_tree().change_scene_to_file(path)
+
+
+## Index of current_level_path in LEVELS, or -1 if not found.
+func current_level_index() -> int:
+	for i in LEVELS.size():
+		if LEVELS[i]["path"] == current_level_path:
+			return i
+	return -1
+
+
+## Path of the next level after the current one, or "" if this is the last.
+func next_level_path() -> String:
+	var idx := current_level_index()
+	if idx >= 0 and idx + 1 < LEVELS.size():
+		return LEVELS[idx + 1]["path"]
+	return ""

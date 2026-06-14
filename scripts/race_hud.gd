@@ -1,9 +1,10 @@
 # res://scripts/race_hud.gd
 # Kit Out — Race HUD
 #
-# Displays the live run timer, the best time, and a finish banner. Add as a
-# CanvasLayer to a level (or instance race_hud.tscn). Builds its UI in code and
-# listens to GameState's signals — nothing to wire in the editor.
+# Live run timer + best time during play, and a full finish screen on
+# completion (time, new-best flag, and Retry / Next / Menu buttons). Add as a
+# CanvasLayer to a level. Builds its UI in code and listens to GameState's
+# signals — nothing to wire in the editor.
 #
 # Requires the GameState autoload.
 
@@ -13,11 +14,16 @@ extends CanvasLayer
 var _timer_label: Label
 var _best_label: Label
 var _finish_box: Control
-var _finish_label: Label
+var _finish_title: Label
+var _finish_time: Label
+var _next_button: Button
 
 
 func _ready() -> void:
 	layer = 50
+	# Keep working while the tree is paused — the finish screen pauses the game
+	# so the cursor can click the buttons without the cat still running around.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
 	GameState.run_finished.connect(_on_run_finished)
 	GameState.run_started.connect(_on_run_started)
@@ -26,7 +32,6 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	# Live timer text. Dim while not timing so it reads as "ready" vs "running".
 	_timer_label.text = _format_time(GameState.run_time)
 	_timer_label.modulate.a = 1.0 if GameState.is_timing() else 0.5
 
@@ -34,24 +39,52 @@ func _process(_delta: float) -> void:
 # ── Signal handlers ───────────────────────────────────────────────────────────
 
 func _on_run_started() -> void:
-	_finish_box.visible = false
+	_hide_finish()
 
 
 func _on_timer_reset() -> void:
-	_finish_box.visible = false
+	_hide_finish()
 	_refresh_best()
 
 
 func _on_run_finished(time: float, is_best: bool) -> void:
 	_refresh_best()
-	_finish_label.text = "FINISH!\n%s%s" % [
-		_format_time(time),
-		"\nNew Best!" if is_best else ""
-	]
+	_finish_title.text = "NEW BEST!" if is_best else "FINISH!"
+	_finish_time.text = _format_time(time)
+	# Grey out "Next level" when this is the last course
+	_next_button.disabled = GameState.next_level_path() == ""
 	_finish_box.visible = true
+	get_tree().paused = true  # Freeze the game behind the finish screen
+
+
+# ── Button actions ────────────────────────────────────────────────────────────
+
+func _on_retry() -> void:
+	get_tree().paused = false
+	GameState.reset_timer()  # Keep checkpoints? No — a fresh timed run starts clean
+	GameState.clear_checkpoints()
+	get_tree().reload_current_scene()
+
+
+func _on_next() -> void:
+	var next := GameState.next_level_path()
+	if next == "":
+		return
+	get_tree().paused = false
+	GameState.start_level(next)
+
+
+func _on_menu() -> void:
+	get_tree().paused = false
+	GameState.reset_level()
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+func _hide_finish() -> void:
+	_finish_box.visible = false
+
 
 func _refresh_best() -> void:
 	if GameState.best_time == INF:
@@ -90,18 +123,53 @@ func _build_ui() -> void:
 	_best_label.modulate = Color(1, 1, 1, 0.7)
 	top.add_child(_best_label)
 
-	# Finish banner, centre screen (hidden until finish)
-	_finish_box = CenterContainer.new()
+	# ── Finish screen (hidden until finish) ──
+	_finish_box = Control.new()
 	_finish_box.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_finish_box.visible = false
 	add_child(_finish_box)
 
-	var panel := PanelContainer.new()
-	_finish_box.add_child(panel)
+	# Dim backdrop
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0, 0, 0, 0.6)
+	_finish_box.add_child(dim)
 
-	_finish_label = Label.new()
-	_finish_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_finish_label.add_theme_font_size_override("font_size", 44)
-	_finish_label.custom_minimum_size = Vector2(360, 180)
-	_finish_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	panel.add_child(_finish_label)
+	# Centred card
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_finish_box.add_child(center)
+
+	var card := VBoxContainer.new()
+	card.add_theme_constant_override("separation", 14)
+	card.custom_minimum_size = Vector2(340, 0)
+	center.add_child(card)
+
+	_finish_title = Label.new()
+	_finish_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_finish_title.add_theme_font_size_override("font_size", 52)
+	card.add_child(_finish_title)
+
+	_finish_time = Label.new()
+	_finish_time.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_finish_time.add_theme_font_size_override("font_size", 36)
+	_finish_time.modulate = Color(1, 1, 1, 0.85)
+	card.add_child(_finish_time)
+
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 12)
+	card.add_child(spacer)
+
+	card.add_child(_make_button("Retry", _on_retry))
+	_next_button = _make_button("Next Level", _on_next)
+	card.add_child(_next_button)
+	card.add_child(_make_button("Main Menu", _on_menu))
+
+
+func _make_button(text: String, handler: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(0, 46)
+	b.add_theme_font_size_override("font_size", 20)
+	b.pressed.connect(handler)
+	return b

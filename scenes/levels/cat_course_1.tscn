@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=3 uid="uid://catcourse001lvl"]
+[gd_scene format=3 uid="uid://ro22q44g3txh"]
 
 [ext_resource type="PackedScene" uid="uid://3q52hmccaj2x" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://csmm35e3mm1xp" path="res://scripts/camera_follow.gd" id="2_cam"]
 [ext_resource type="PackedScene" path="res://scenes/props/swinging_hammer.tscn" id="3_hammer"]
+[ext_resource type="PackedScene" path="res://scenes/props/projectile_shooter.tscn" id="3_wobmc"]
 [ext_resource type="PackedScene" path="res://scenes/props/collapsing_platform.tscn" id="4_trap"]
 [ext_resource type="PackedScene" path="res://scenes/props/spinning_bar.tscn" id="5_bar"]
 [ext_resource type="PackedScene" path="res://scenes/props/bubble_pad.tscn" id="6_bubble"]
@@ -11,7 +12,7 @@
 [ext_resource type="PackedScene" path="res://scenes/props/kill_zone.tscn" id="9_kill"]
 [ext_resource type="PackedScene" path="res://scenes/props/race_gate.tscn" id="10_gate"]
 [ext_resource type="Script" uid="uid://bj3ngqr0esnsc" path="res://scripts/pause_menu.gd" id="11_pause"]
-[ext_resource type="Script" path="res://scripts/race_hud.gd" id="12_hud"]
+[ext_resource type="Script" uid="uid://bkyw0puo8y0q" path="res://scripts/race_hud.gd" id="12_hud"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat"]
 sky_horizon_color = Color(0.64, 0.65, 0.67, 1)
@@ -32,136 +33,138 @@ albedo_color = Color(0.55, 0.55, 0.6, 1)
 [sub_resource type="StandardMaterial3D" id="mat_ice"]
 albedo_color = Color(0.55, 0.85, 1, 1)
 
+[node name="CatCourse1" type="Node3D" unique_id=1765796863]
 
-[node name="CatCourse1" type="Node3D"]
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=147364352]
 environment = SubResource("env")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=887209824]
 transform = Transform3D(0.86, -0.35, 0.37, 0, 0.72, 0.69, -0.51, -0.6, 0.62, 0, 20, 0)
 shadow_enabled = true
 
-[node name="Player" parent="." instance=ExtResource("1_player")]
+[node name="Player" parent="." unique_id=1281973443 instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 0)
 
-[node name="Camera3D" type="Camera3D" parent="." node_paths=PackedStringArray("target")]
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1279591682 node_paths=PackedStringArray("target")]
 transform = Transform3D(0.92454606, 0.09862827, -0.3680857, 0, 0.9659258, 0.25881904, 0.38107038, -0.23929013, 0.8930429, 0, 3, 8)
 script = ExtResource("2_cam")
 target = NodePath("../Player")
 
-[node name="World" type="Node" parent="."]
+[node name="World" type="Node" parent="." unique_id=1111112637]
 
-[node name="GroundZone0_1" type="CSGBox3D" parent="World"]
+[node name="ProjectileShooter" parent="World" unique_id=1094650809 instance=ExtResource("3_wobmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.853714, 1.9612427, 0)
+
+[node name="GroundZone0_1" type="CSGBox3D" parent="World" unique_id=716881944]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, -0.5, 0)
 use_collision = true
 collision_mask = 2
 size = Vector3(56, 1, 6)
 material = SubResource("mat_floor")
 
-[node name="GroundZone2" type="CSGBox3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 74, -0.5, 0)
-use_collision = true
-collision_mask = 2
-size = Vector3(28, 1, 6)
-material = SubResource("mat_floor")
-
-[node name="IceZone2" type="CSGBox3D" parent="World" groups=["ice_surface"]]
+[node name="IceZone2" type="CSGBox3D" parent="World" unique_id=307563267 groups=["ice_surface"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 98, -0.5, 0)
 use_collision = true
 collision_mask = 2
 size = Vector3(20, 1, 6)
 material = SubResource("mat_ice")
 
-[node name="GroundZone3Base" type="CSGBox3D" parent="World"]
+[node name="GroundZone3Base" type="CSGBox3D" parent="World" unique_id=1515923938]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 120, -0.5, 0)
 use_collision = true
 collision_mask = 2
 size = Vector3(16, 1, 6)
 material = SubResource("mat_floor")
 
-[node name="WallLeft" type="CSGBox3D" parent="World" groups=["wall_jumpable"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 130, 6, 0)
+[node name="WallLeft" type="CSGBox3D" parent="World" unique_id=263861377 groups=["wall_jumpable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 130, 14, 0)
 use_collision = true
 collision_mask = 2
 size = Vector3(1, 14, 6)
 material = SubResource("mat_floor")
 
-[node name="WallRight" type="CSGBox3D" parent="World" groups=["wall_jumpable"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 137, 9, 0)
+[node name="WallRight" type="CSGBox3D" parent="World" unique_id=1652179891 groups=["wall_jumpable"]]
+transform = Transform3D(0.9999649, 0.008377482, 0, -0.008377482, 0.9999649, 0, 0, 0, 1, 139, 9, 0)
 use_collision = true
 collision_mask = 2
 size = Vector3(1, 14, 6)
 material = SubResource("mat_floor")
 
-[node name="LedgeZone3Top" type="CSGBox3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 140, 13.5, 0)
+[node name="LedgeZone3Top" type="CSGBox3D" parent="World" unique_id=1220751704]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 140, 15.5, 0)
 use_collision = true
 collision_mask = 2
 size = Vector3(12, 1, 6)
 material = SubResource("mat_floor")
 
-[node name="IceRampZone4" type="CSGBox3D" parent="World" groups=["ice_surface"]]
-transform = Transform3D(0.95, -0.31, 0, 0.31, 0.95, 0, 0, 0, 1, 158, 9, 0)
+[node name="IceRampZone4" type="CSGBox3D" parent="World" unique_id=570738510 groups=["ice_surface"]]
+transform = Transform3D(0.8909545, 0.4525483, 0, -0.4525483, 0.8909545, 0, 0, 0, 0.99999994, 159.139, 8.765997, 0)
 use_collision = true
 collision_mask = 2
 size = Vector3(30, 1, 6)
 material = SubResource("mat_ice")
 
-[node name="GroundZone5Finish" type="CSGBox3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 188, 0, 0)
+[node name="GroundZone5Finish" type="CSGBox3D" parent="World" unique_id=1233921136]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 204, 0, 0)
 use_collision = true
 collision_mask = 2
 size = Vector3(24, 1, 6)
 material = SubResource("mat_floor")
 
-[node name="Obstacles" type="Node" parent="."]
+[node name="Obstacles" type="Node" parent="." unique_id=675261086]
 
-[node name="Hammer_Z1" parent="Obstacles" instance=ExtResource("3_hammer")]
+[node name="Hammer_Z1" parent="Obstacles" unique_id=1398290277 instance=ExtResource("3_hammer")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 5, 0)
 
-[node name="Trap_Z2_a" parent="Obstacles" instance=ExtResource("4_trap")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70, 0, 0)
+[node name="Trap_Z2_a" parent="Obstacles" unique_id=1292597454 instance=ExtResource("4_trap")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70, 2, 0)
 
-[node name="Trap_Z2_b" parent="Obstacles" instance=ExtResource("4_trap")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 0, 0)
+[node name="Trap_Z2_b" parent="Obstacles" unique_id=701738048 instance=ExtResource("4_trap")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 4, 0)
 gap_before_shake = 0.25
 
-[node name="Bar_Z2" parent="Obstacles" instance=ExtResource("5_bar")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 98, 0, 0)
+[node name="Trap_Z2_c" parent="Obstacles" unique_id=572027313 instance=ExtResource("4_trap")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0, 0)
+gap_before_shake = 0.25
 
-[node name="Bubble_Z3_a" parent="Obstacles" instance=ExtResource("6_bubble")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 133, 4, 0)
+[node name="Bar_Z2" parent="Obstacles" unique_id=550612515 instance=ExtResource("5_bar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 98, 2.758407, 0)
 
-[node name="Bubble_Z3_b" parent="Obstacles" instance=ExtResource("6_bubble")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 137, 8, 0)
+[node name="Bubble_Z3_a" parent="Obstacles" unique_id=1371579492 instance=ExtResource("6_bubble")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 133, 1, 0)
 
-[node name="Skip_Z4" parent="Obstacles" instance=ExtResource("7_skip")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 168, 8, 0)
+[node name="Bubble_Z3_b" parent="Obstacles" unique_id=2129727161 instance=ExtResource("6_bubble")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 136, 5, 0)
 
-[node name="Checkpoints" type="Node" parent="."]
+[node name="Bubble_Z3_b2" parent="Obstacles" unique_id=1761002216 instance=ExtResource("6_bubble")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 132, 9, 0)
 
-[node name="Checkpoint_afterZ1" parent="Checkpoints" instance=ExtResource("8_chk")]
+[node name="Skip_Z4" parent="Obstacles" unique_id=1266249676 instance=ExtResource("7_skip")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 168, 30.476496, 0)
+
+[node name="Checkpoints" type="Node" parent="." unique_id=1144715905]
+
+[node name="Checkpoint_afterZ1" parent="Checkpoints" unique_id=2037792189 instance=ExtResource("8_chk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 0)
 
-[node name="Checkpoint_afterZ2" parent="Checkpoints" instance=ExtResource("8_chk")]
+[node name="Checkpoint_afterZ2" parent="Checkpoints" unique_id=136189234 instance=ExtResource("8_chk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 112, 0, 0)
 
-[node name="Checkpoint_topZ3" parent="Checkpoints" instance=ExtResource("8_chk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 143, 14, 0)
+[node name="Checkpoint_topZ3" parent="Checkpoints" unique_id=1032675578 instance=ExtResource("8_chk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 143, 16, 0)
 
-[node name="KillZone" parent="." instance=ExtResource("9_kill")]
+[node name="KillZone" parent="." unique_id=890740936 instance=ExtResource("9_kill")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, -20, 0)
 
-[node name="StartGate" parent="." instance=ExtResource("10_gate")]
+[node name="StartGate" parent="." unique_id=1763536856 instance=ExtResource("10_gate")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
 
-[node name="FinishGate" parent="." instance=ExtResource("10_gate")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 196, 0, 0)
+[node name="FinishGate" parent="." unique_id=605571535 instance=ExtResource("10_gate")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 198, 0, 0)
 mode = 1
 
-[node name="RaceHUD" type="CanvasLayer" parent="."]
+[node name="RaceHUD" type="CanvasLayer" parent="." unique_id=683838323]
 script = ExtResource("12_hud")
 
-[node name="PauseMenu" type="CanvasLayer" parent="."]
+[node name="PauseMenu" type="CanvasLayer" parent="." unique_id=239161678]
 script = ExtResource("11_pause")
