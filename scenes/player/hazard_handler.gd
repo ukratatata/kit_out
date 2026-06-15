@@ -32,7 +32,7 @@ func apply_hit(knockback: Vector2) -> void:
 
 
 ## Off-track hit (spinning bars). The Z component ejects the player from the
-## lane; off_track_timer frees the Z-lock so the knock can actually move them.
+## lane.
 func apply_hit_3d(knockback: Vector3) -> void:
 	if iframe_timer > 0.0:
 		return

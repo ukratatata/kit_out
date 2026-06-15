@@ -218,15 +218,7 @@ func _physics_process(delta: float) -> void:
 		floor_snap_length = surface.slope_snap_length 
 	# ─────────────────────────────
 
-	# Belt-and-suspenders 2.5D lock (axis_lock_linear_z is also set in the scene).
-	# EXCEPTION: while an off-track knock is active, Z is freed so the player can
-	# be ejected from the lane; afterwards they're eased back to the play plane.
-	if hazards.off_track:
-		axis_lock_linear_z = false
-	else:
-		velocity.z = 0.0
-		global_position.z = 0.0
-		axis_lock_linear_z = true
+	# 2.5D lock.
 	move_and_slide()
 
 	_update_camera_velocity(delta)
@@ -769,10 +761,8 @@ func respawn_at(world_pos: Vector3) -> void:
 	velocity = Vector3.ZERO
 	global_position = world_pos
 	
-	hazards.off_track = false
 	hazards.stun_timer = 0.0
 	hazards.iframe_timer = 0.0
-	axis_lock_linear_z = true
 	
 	_set_crouch(false)
 	_air_crouch = false
