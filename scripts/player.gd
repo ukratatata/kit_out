@@ -224,9 +224,9 @@ func _physics_process(delta: float) -> void:
 	if hazards.off_track:
 		axis_lock_linear_z = false
 	else:
-		axis_lock_linear_z = true
 		velocity.z = 0.0
 		global_position.z = 0.0
+		axis_lock_linear_z = true
 	move_and_slide()
 
 	_update_camera_velocity(delta)
@@ -766,8 +766,8 @@ func bounce(force: float, horizontal_keep: float = 1.0) -> void:
 ## player to a safe point). Teleports, zeroes all motion, re-locks the Z plane,
 ## clears air/hit state, and drops into FALL so the cat settles onto the ground.
 func respawn_at(world_pos: Vector3) -> void:
-	global_position = world_pos
 	velocity = Vector3.ZERO
+	global_position = world_pos
 	
 	hazards.off_track = false
 	hazards.stun_timer = 0.0
