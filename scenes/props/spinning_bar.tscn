@@ -1,6 +1,6 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://buc7xxvb8g3kv"]
 
-[ext_resource type="Script" path="res://scripts/spinning_bar.gd" id="1_spinbar"]
+[ext_resource type="Script" uid="uid://bs3uyhaqhxmwt" path="res://scripts/spinning_bar.gd" id="1_spinbar"]
 
 [sub_resource type="StandardMaterial3D" id="mat_bar"]
 albedo_color = Color(0.9, 0.15, 0.15, 1)
@@ -15,32 +15,25 @@ size = Vector3(0.4, 2.4, 0.4)
 [sub_resource type="BoxShape3D" id="shape_hit"]
 size = Vector3(0.6, 2.6, 0.6)
 
-
-[node name="SpinningBar" type="Node3D" node_paths=PackedStringArray("hitbox")]
+[node name="SpinningBar" type="Node3D" unique_id=657233884 node_paths=PackedStringArray("hitbox")]
 script = ExtResource("1_spinbar")
 hitbox = NodePath("Pivot/HitBox")
 
+[node name="Pivot" type="AnimatableBody3D" parent="." unique_id=1180323420]
+collision_mask = 0
 
-[node name="Pivot" type="AnimatableBody3D" parent="."]
-collision_layer = 1
-collision_mask  = 0
-
-
-[node name="BarMesh" type="MeshInstance3D" parent="Pivot"]
+[node name="BarMesh" type="MeshInstance3D" parent="Pivot" unique_id=1227916094]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 mesh = SubResource("mesh_bar")
 
-
-[node name="BarShape" type="CollisionShape3D" parent="Pivot"]
+[node name="BarShape" type="CollisionShape3D" parent="Pivot" unique_id=288105057]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 shape = SubResource("shape_bar")
 
-
-[node name="HitBox" type="Area3D" parent="Pivot"]
+[node name="HitBox" type="Area3D" parent="Pivot" unique_id=1002464999]
 collision_layer = 0
-collision_mask  = 2
+collision_mask = 2
 
-
-[node name="HitShape" type="CollisionShape3D" parent="Pivot/HitBox"]
+[node name="HitShape" type="CollisionShape3D" parent="Pivot/HitBox" unique_id=1309558986]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 shape = SubResource("shape_hit")
