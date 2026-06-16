@@ -764,11 +764,16 @@ func respawn_at(world_pos: Vector3) -> void:
 	hazards.stun_timer = 0.0
 	hazards.iframe_timer = 0.0
 	
+=======
+	set_deferred("axis_lock_linear_z", true)
+	set_deferred("off_track", false)	
+>>>>>>> Stashed changes
 	_set_crouch(false)
 	_air_crouch = false
 	_visual_base_scale   = Vector3.ONE
 	_visual_scale_target = Vector3.ONE
 	
+
 	_coyote_timer = 0.0
 	_jump_buffer_timer = 0.0
 	_same_wall_cooldown_timer = 0.0
