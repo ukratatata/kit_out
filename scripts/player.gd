@@ -218,15 +218,15 @@ func _physics_process(delta: float) -> void:
 		floor_snap_length = surface.slope_snap_length 
 	# ─────────────────────────────
 
-	# Belt-and-suspenders 2.5D lock (axis_lock_linear_z is also set in the scene).
+	# 2.5D lock.
 	# EXCEPTION: while an off-track knock is active, Z is freed so the player can
 	# be ejected from the lane; afterwards they're eased back to the play plane.
 	if hazards.off_track:
-		axis_lock_linear_z = false
+		set_deferred("axis_lock_linear_z", false)
 	else:
-		axis_lock_linear_z = true
 		velocity.z = 0.0
 		global_position.z = 0.0
+		set_deferred("axis_lock_linear_z", true)
 	move_and_slide()
 
 	_update_camera_velocity(delta)
@@ -766,19 +766,19 @@ func bounce(force: float, horizontal_keep: float = 1.0) -> void:
 ## player to a safe point). Teleports, zeroes all motion, re-locks the Z plane,
 ## clears air/hit state, and drops into FALL so the cat settles onto the ground.
 func respawn_at(world_pos: Vector3) -> void:
-	global_position = world_pos
 	velocity = Vector3.ZERO
+	global_position = world_pos
 	
-	hazards.off_track = false
 	hazards.stun_timer = 0.0
 	hazards.iframe_timer = 0.0
-	axis_lock_linear_z = true
-	
+	hazards.off_track = false	
+
 	_set_crouch(false)
 	_air_crouch = false
 	_visual_base_scale   = Vector3.ONE
 	_visual_scale_target = Vector3.ONE
 	
+
 	_coyote_timer = 0.0
 	_jump_buffer_timer = 0.0
 	_same_wall_cooldown_timer = 0.0

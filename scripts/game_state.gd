@@ -101,7 +101,7 @@ func set_checkpoint(world_pos: Vector3, progress: float) -> void:
 
 
 func has_checkpoint() -> bool:
-	return last_checkpoint != Vector3.INF
+	return last_checkpoint != Vector3.INF # !!! NOT SURE IF THIS IS THE BEST SOLUTION, MAYBLE A FLAG OR SOMETHING
 
 
 func clear_checkpoints() -> void:

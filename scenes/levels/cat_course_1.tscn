@@ -137,6 +137,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 98, 2.758407, 0)
 [node name="Bar_Z3" parent="Obstacles" unique_id=1150014766 instance=ExtResource("5_bar")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.49189, 2.758407, 0)
 
+[node name="Bar_Z6" parent="Obstacles" unique_id=208285074 instance=ExtResource("5_bar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9871216, 2.758407, 0)
+
 [node name="Bar_Z4" parent="Obstacles" unique_id=1922294591 instance=ExtResource("5_bar")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.299, 2.758407, 0)
 

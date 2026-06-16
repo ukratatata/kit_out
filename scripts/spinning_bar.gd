@@ -29,7 +29,6 @@ extends Node3D
 @export_range(0.0, 1.0, 0.05) var phase_offset: float = 0.0
 ## Knockback on hit. x = small lateral nudge, z = OFF-TRACK push, y = upward pop.
 ## The z component is the headline effect — it ejects the player from the lane.
-## Far stronger than the hammer (~5×) so a bar hit is a hard, memorable ejection.
 @export var knockback: Vector3     = Vector3(7.0, 16.0, 15.0)
 ## Per-bar hit cooldown — prevents re-hitting on the same pass.
 @export var hit_cooldown: float    = 0.8
