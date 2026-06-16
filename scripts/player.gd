@@ -219,6 +219,14 @@ func _physics_process(delta: float) -> void:
 	# ─────────────────────────────
 
 	# 2.5D lock.
+	# EXCEPTION: while an off-track knock is active, Z is freed so the player can
+	# be ejected from the lane; afterwards they're eased back to the play plane.
+	if hazards.off_track:
+		set_deferred("axis_lock_linear_z", false)
+	else:
+		velocity.z = 0.0
+		global_position.z = 0.0
+		set_deferred("axis_lock_linear_z", true)
 	move_and_slide()
 
 	_update_camera_velocity(delta)
@@ -763,11 +771,8 @@ func respawn_at(world_pos: Vector3) -> void:
 	
 	hazards.stun_timer = 0.0
 	hazards.iframe_timer = 0.0
-	
-=======
-	set_deferred("axis_lock_linear_z", true)
-	set_deferred("off_track", false)	
->>>>>>> Stashed changes
+	hazards.off_track = false	
+
 	_set_crouch(false)
 	_air_crouch = false
 	_visual_base_scale   = Vector3.ONE
